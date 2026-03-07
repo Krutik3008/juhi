@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Code, ArrowRight } from 'lucide-react';
+import { Play, Code, ArrowRight, RotateCcw } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
@@ -32,6 +32,12 @@ const Home = () => {
         }, 1200);
     };
 
+    const handleReset = () => {
+        setSourceCode('position = initial + rate * 60');
+        setIsSimulating(false);
+        setActivePhase(0);
+    };
+
     return (
         <div className="home-container">
             <div className="page-header">
@@ -46,6 +52,10 @@ const Home = () => {
                     <div className="panel-header">
                         <Code size={20} className="panel-icon" />
                         <h3>Source Code Input</h3>
+                        <button className="btn-reset" onClick={handleReset}>
+                            <RotateCcw size={14} />
+                            Reset
+                        </button>
                     </div>
                     <div className="preset-examples-container">
                         <span className="preset-label">
@@ -83,110 +93,150 @@ const Home = () => {
                     </button>
                 </div>
 
-                {isSimulating && (
-                    <div className="pipeline-visualizer">
-                        <div className="simulation-linear-view mt-8">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="section-title mb-0">Step-by-Step Compilation Process</h3>
-                                <div className="step-badge">{activePhase} / 6 Phases Complete</div>
-                            </div>
-                            <div className="results-stack">
-                                {phases.map((phase) => (
-                                    activePhase >= phase.id && (
-                                        <motion.div 
-                                            key={phase.id}
-                                            initial={{ opacity: 0, y: 30 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="glass-panel result-card full-width"
-                                        >
-                                            <div className="result-header p-4 border-b border-gray-800 flex items-center gap-3">
-                                                <div className="phase-pill">Phase {phase.id}</div>
-                                                <h4 className="text-xl font-bold text-white">{phase.title}</h4>
-                                            </div>
-                                            <div className="result-body p-6 bg-black/20">
-                                                {phase.id === 1 && (
-                                                    <div className="detailed-tokens">
-                                                        <div className="token-list flex flex-wrap gap-3">
-                                                            {[
-                                                                { t: 'ID', v: 'position' }, { t: 'ASN', v: '=' },
-                                                                { t: 'ID', v: 'initial' }, { t: 'PLS', v: '+' },
-                                                                { t: 'ID', v: 'rate' }, { t: 'STR', v: '*' },
-                                                                { t: 'NUM', v: '60' }
-                                                            ].map((token, i) => (
-                                                                <div key={i} className="token-item">
-                                                                    <span className="token-type">{token.t}</span>
-                                                                    <span className="token-value">{token.v}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {phase.id === 2 && (
-                                                    <div className="detailed-syntax">
-                                                        <pre className="code-block large">
-{`[Statement]
-└── [Assignment]
-    ├── ID: position
-    ├── OP: =
-    └── [Expression]
-        ├── ID: initial
-        ├── OP: +
-        └── [Term]
-            ├── ID: rate
-            ├── OP: *
-            └── NUM: 60`}
-                                                        </pre>
-                                                    </div>
-                                                )}
-                                                {phase.id === 3 && (
-                                                    <div className="detailed-semantic">
-                                                        <div className="semantic-check-list flex flex-col gap-2">
-                                                            <div className="check-item success">✓ Symbol Check: OK</div>
-                                                            <div className="check-item success">✓ Type Check: (float) = (float) + (float) * (float) OK</div>
-                                                            <div className="annotated-code p-4 bg-blue-900/10 border border-blue-500/20 rounded mt-2">
-                                                                <code className="text-accent underline">float position = (float)initial + (float)rate * (float)60;</code>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {phase.id === 4 && (
-                                                    <div className="detailed-tac">
-                                                        <pre className="code-block tac-style font-bold">
-                                                            {`t1 = rate * 60
-t2 = initial + t1
-position = t2`}
-                                                        </pre>
-                                                    </div>
-                                                )}
-                                                {phase.id === 5 && (
-                                                    <div className="detailed-opt">
-                                                        <div className="opt-box bg-green-900/10 border border-green-500/20 p-4 rounded">
-                                                            <pre className="text-success font-bold">
-                                                                {`t1 = rate * 60.0
-position = initial + t1`}
-                                                            </pre>
-                                                            <p className="text-xs text-muted mt-2">Optimization: Copy propagation & Constant folding applied.</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {phase.id === 6 && (
-                                                    <div className="detailed-asm">
-                                                        <pre className="code-block assembly text-blue-400">
-                                                            {`LDF   R2, rate
-MULF  R2, R2, #60.0
-ADDF  R1, R1, R2
-STF   position, R1`}
-                                                        </pre>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    )
-                                ))}
-                            </div>
+                <div className="pipeline-visualizer">
+                    <div className="simulation-linear-view mt-4">
+                        <h3 className="section-title">Compilation Progress</h3>
+                        <div className="phases-container">
+                            {phases.map((phase, index) => (
+                                <React.Fragment key={phase.id}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                        className={`phase-card ${activePhase >= phase.id ? 'completed' : ''} ${activePhase === phase.id ? 'active' : ''}`}
+                                    >
+                                        <div className="phase-number">{phase.id}</div>
+                                        <div className="phase-content">
+                                            <h4>{phase.title}</h4>
+                                            <p>{phase.desc}</p>
+                                        </div>
+                                    </motion.div>
+                                    {index < phases.length - 1 && (
+                                        <ArrowRight className={`phase-arrow ${activePhase > phase.id ? 'active' : ''}`} />
+                                    )}
+                                </React.Fragment>
+                            ))}
                         </div>
+
+                        {isSimulating && (
+                            <div className="results-container mt-12">
+                                <h3 className="section-title mb-6">Step-by-Step Compilation Process</h3>
+                                <div className="results-stack">
+                                    {phases.map((phase) => (
+                                        activePhase >= phase.id && (
+                                            <motion.div
+                                                key={phase.id}
+                                                initial={{ opacity: 0, y: 30 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="glass-panel result-card full-width"
+                                            >
+                                                <div className="result-header p-4 border-b border-gray-800 flex items-center gap-3">
+                                                    <div className="phase-pill">Phase {phase.id}</div>
+                                                    <h4 className="text-xl font-bold text-white">{phase.title}</h4>
+                                                </div>
+                                                <div className="result-body p-6 bg-black/20">
+                                                    {phase.id === 1 && (
+                                                        <div className="phase-code-section">
+                                                            <p className="phase-label"><strong>Tokens produced:</strong></p>
+                                                            <div className="phase-table-wrapper">
+                                                                <table className="phase-table">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Lexeme</th>
+                                                                            <th>Token Type</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {[
+                                                                            ['position', 'Identifier'],
+                                                                            ['=', 'Assignment Operator'],
+                                                                            ['initial', 'Identifier'],
+                                                                            ['+', 'Addition Operator'],
+                                                                            ['rate', 'Identifier'],
+                                                                            ['*', 'Multiplication Operator'],
+                                                                            ['60', 'Constant']
+                                                                        ].map(([lexeme, type], i) => (
+                                                                            <tr key={i}>
+                                                                                <td>{lexeme}</td>
+                                                                                <td>{type}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                            <p className="phase-label">So the <strong>token stream</strong> becomes:</p>
+                                                            <pre className="phase-code-block">{`<id, position>  <=>  <id, initial>  <+>  <id, rate>  <*>  <num, 60>`}</pre>
+                                                        </div>
+                                                    )}
+                                                    {phase.id === 2 && (
+                                                        <div className="phase-code-wrapper">
+                                                            <pre className="phase-code-block">{`        =
+       / \\
+  position  +
+           / \\
+      initial  *
+              / \\
+          rate   60`}</pre>
+                                                        </div>
+                                                    )}
+                                                    {phase.id === 3 && (
+                                                        <div className="phase-table-wrapper">
+                                                            <table className="phase-table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Identifier</th>
+                                                                        <th>Type</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {[
+                                                                        ['position', 'float'],
+                                                                        ['initial', 'float'],
+                                                                        ['rate', 'float']
+                                                                    ].map(([id, type], i) => (
+                                                                        <tr key={i}>
+                                                                            <td>{id}</td>
+                                                                            <td>{type}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    )}
+                                                    {phase.id === 4 && (
+                                                        <div className="phase-code-section">
+                                                            <p className="phase-label">Three-address code:</p>
+                                                            <pre className="phase-code-block">{`t1 = rate * 60
+t2 = initial + t1
+position = t2`}</pre>
+                                                        </div>
+                                                    )}
+                                                    {phase.id === 5 && (
+                                                        <div className="phase-code-section">
+                                                            <p className="phase-label">Optimized code:</p>
+                                                            <pre className="phase-code-block">{`t1 = rate * 60
+position = initial + t1`}</pre>
+                                                        </div>
+                                                    )}
+                                                    {phase.id === 6 && (
+                                                        <div className="phase-code-section">
+                                                            <p className="phase-label">Example (generic assembly style):</p>
+                                                            <pre className="phase-code-block">{`LOAD  R1, rate
+MUL   R1, 60
+LOAD  R2, initial
+ADD   R2, R1
+STORE position, R2`}</pre>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

@@ -17,6 +17,30 @@
     padding-bottom: 16px;
 }
 
+.panel-header h3 {
+    flex: 1;
+}
+
+.btn-reset {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    color: var(--accent-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-reset:hover {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: var(--accent-primary);
+}
+
 .panel-icon {
     color: var(--accent-primary);
 }
@@ -114,89 +138,107 @@
     color: var(--text-primary);
 }
 
-/* Timeline UI */
-.phases-timeline {
+.phases-container {
     display: flex;
-    align-items: center;
-    background: rgba(22, 27, 34, 0.4);
-    padding: 20px;
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 40px;
-}
-
-.timeline-node {
-    display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 8px;
-    position: relative;
-    z-index: 1;
-    transition: all 0.3s ease;
+    flex-wrap: nowrap;
+    margin-bottom: 32px;
+    overflow-x: auto;
 }
 
-.node-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--bg-tertiary);
-    border: 2px solid var(--border-color);
+.phase-card {
+    flex: 1 1 0;
+    min-width: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-muted);
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
 }
 
-.timeline-node.active .node-icon {
-    background: rgba(63, 185, 80, 0.1);
-    border-color: var(--success);
-    color: var(--success);
-}
-
-.timeline-node.current .node-icon {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
-    box-shadow: 0 0 15px var(--accent-glow);
-}
-
-.node-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    white-space: nowrap;
-}
-
-.timeline-node.active .node-label {
-    color: var(--text-primary);
-}
-
-.timeline-connector {
-    flex: 1;
-    height: 2px;
-    background: var(--border-color);
-    margin: 0 10px;
-    margin-top: -24px;
-    /* Align with icon center */
-}
-
-.timeline-connector.active {
+.phase-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
     background: var(--success);
 }
 
-/* Results Log */
-.results-container {
-    padding: 0 20px;
+.phase-card.completed::before {
+    background: var(--success);
 }
 
-.results-stack {
+.phase-card.active {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-4px);
+}
+
+.phase-card.active::before {
+    background: var(--accent-primary);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.phase-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(63, 185, 80, 0.2);
     display: flex;
-    flex-direction: column;
-    gap: 40px;
-    position: relative;
-    padding-left: 40px;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--success);
+    border: 2px solid var(--success);
+}
+
+.phase-card.completed .phase-number {
+    background: rgba(63, 185, 80, 0.2);
+    color: var(--success);
+}
+
+.phase-card.active .phase-number {
+    background: rgba(88, 166, 255, 0.2);
+    color: var(--accent-primary);
+}
+
+.phase-content h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+    margin-top: 0;
+}
+
+.phase-content p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 0;
+}
+
+.phase-arrow {
+    color: var(--border-color);
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+}
+
+.phase-arrow.active {
+    color: var(--success);
+}
+
+.mt-12 {
+    margin-top: 48px;
 }
 
 .results-stack::before {
@@ -228,9 +270,6 @@
 
 /* Linear Simulation View */
 .simulation-linear-view {
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
     display: flex;
     flex-direction: column;
     gap: 32px;
@@ -242,6 +281,80 @@
     flex-direction: column;
     gap: 24px;
     width: 100%;
+}
+
+/* Phase Table Styles */
+.phase-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.phase-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.phase-table thead th {
+    text-align: left;
+    padding: 14px 24px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--accent-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.phase-table tbody td {
+    padding: 14px 24px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(48, 54, 61, 0.3);
+}
+
+.phase-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Phase Code Block Styles */
+.phase-code-wrapper {
+    width: 100%;
+}
+
+.phase-code-block {
+    background: rgba(13, 17, 23, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    overflow-x: auto;
+    margin: 0;
+    white-space: pre;
+}
+
+.phase-code-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.phase-label {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.phase-description {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.phase-description strong {
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 .result-card.full-width {
