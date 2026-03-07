@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Code, ArrowRight, RotateCcw } from 'lucide-react';
+import { compile } from './compilerEngine';
 import './Home.css';
 
 const Home = () => {
     const [sourceCode, setSourceCode] = useState('position = initial + rate * 60');
     const [isSimulating, setIsSimulating] = useState(false);
     const [activePhase, setActivePhase] = useState(0);
+    const [compileResult, setCompileResult] = useState(null);
 
     const phases = [
         { id: 1, title: 'Lexical Analysis', desc: 'Tokenizing input string' },
@@ -18,6 +20,8 @@ const Home = () => {
     ];
 
     const handleSimulate = () => {
+        const result = compile(sourceCode);
+        setCompileResult(result);
         setIsSimulating(true);
         setActivePhase(1);
 
@@ -36,6 +40,7 @@ const Home = () => {
         setSourceCode('position = initial + rate * 60');
         setIsSimulating(false);
         setActivePhase(0);
+        setCompileResult(null);
     };
 
     return (
@@ -135,7 +140,7 @@ const Home = () => {
                                                     <h4 className="text-xl font-bold text-white">{phase.title}</h4>
                                                 </div>
                                                 <div className="result-body p-6 bg-black/20">
-                                                    {phase.id === 1 && (
+                                                    {phase.id === 1 && compileResult && (
                                                         <div className="phase-code-section">
                                                             <p className="phase-label"><strong>Tokens produced:</strong></p>
                                                             <div className="phase-table-wrapper">
@@ -147,39 +152,25 @@ const Home = () => {
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody>
-                                                                        {[
-                                                                            ['position', 'Identifier'],
-                                                                            ['=', 'Assignment Operator'],
-                                                                            ['initial', 'Identifier'],
-                                                                            ['+', 'Addition Operator'],
-                                                                            ['rate', 'Identifier'],
-                                                                            ['*', 'Multiplication Operator'],
-                                                                            ['60', 'Constant']
-                                                                        ].map(([lexeme, type], i) => (
+                                                                        {compileResult.tokens.map((token, i) => (
                                                                             <tr key={i}>
-                                                                                <td>{lexeme}</td>
-                                                                                <td>{type}</td>
+                                                                                <td>{token.lexeme}</td>
+                                                                                <td>{token.type}</td>
                                                                             </tr>
                                                                         ))}
                                                                     </tbody>
                                                                 </table>
                                                             </div>
                                                             <p className="phase-label">So the <strong>token stream</strong> becomes:</p>
-                                                            <pre className="phase-code-block">{`<id, position>  <=>  <id, initial>  <+>  <id, rate>  <*>  <num, 60>`}</pre>
+                                                            <pre className="phase-code-block">{compileResult.tokenStream}</pre>
                                                         </div>
                                                     )}
-                                                    {phase.id === 2 && (
+                                                    {phase.id === 2 && compileResult && (
                                                         <div className="phase-code-wrapper">
-                                                            <pre className="phase-code-block">{`        =
-       / \\
-  position  +
-           / \\
-      initial  *
-              / \\
-          rate   60`}</pre>
+                                                            <pre className="phase-code-block">{compileResult.parseTree}</pre>
                                                         </div>
                                                     )}
-                                                    {phase.id === 3 && (
+                                                    {phase.id === 3 && compileResult && (
                                                         <div className="phase-table-wrapper">
                                                             <table className="phase-table">
                                                                 <thead>
@@ -189,43 +180,32 @@ const Home = () => {
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {[
-                                                                        ['position', 'float'],
-                                                                        ['initial', 'float'],
-                                                                        ['rate', 'float']
-                                                                    ].map(([id, type], i) => (
+                                                                    {compileResult.symbolTable.map((sym, i) => (
                                                                         <tr key={i}>
-                                                                            <td>{id}</td>
-                                                                            <td>{type}</td>
+                                                                            <td>{sym.name}</td>
+                                                                            <td>{sym.type}</td>
                                                                         </tr>
                                                                     ))}
                                                                 </tbody>
                                                             </table>
                                                         </div>
                                                     )}
-                                                    {phase.id === 4 && (
+                                                    {phase.id === 4 && compileResult && (
                                                         <div className="phase-code-section">
                                                             <p className="phase-label">Three-address code:</p>
-                                                            <pre className="phase-code-block">{`t1 = rate * 60
-t2 = initial + t1
-position = t2`}</pre>
+                                                            <pre className="phase-code-block">{compileResult.tac}</pre>
                                                         </div>
                                                     )}
-                                                    {phase.id === 5 && (
+                                                    {phase.id === 5 && compileResult && (
                                                         <div className="phase-code-section">
                                                             <p className="phase-label">Optimized code:</p>
-                                                            <pre className="phase-code-block">{`t1 = rate * 60
-position = initial + t1`}</pre>
+                                                            <pre className="phase-code-block">{compileResult.optimized}</pre>
                                                         </div>
                                                     )}
-                                                    {phase.id === 6 && (
+                                                    {phase.id === 6 && compileResult && (
                                                         <div className="phase-code-section">
-                                                            <p className="phase-label">Example (generic assembly style):</p>
-                                                            <pre className="phase-code-block">{`LOAD  R1, rate
-MUL   R1, 60
-LOAD  R2, initial
-ADD   R2, R1
-STORE position, R2`}</pre>
+                                                            <p className="phase-label">Assembly output:</p>
+                                                            <pre className="phase-code-block">{compileResult.assembly}</pre>
                                                         </div>
                                                     )}
                                                 </div>
