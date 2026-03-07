@@ -1,7 +1,0 @@
-                    =             
-                   / \            
-          position        +       
-                         / \      
-                   initial     *  
-                              / \ 
-                           rate 60

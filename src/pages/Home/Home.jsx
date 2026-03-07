@@ -5,7 +5,7 @@ import { compile } from './compilerEngine';
 import './Home.css';
 
 const Home = () => {
-    const [sourceCode, setSourceCode] = useState('position = initial + rate * 60');
+    const [sourceCode, setSourceCode] = useState('');
     const [isSimulating, setIsSimulating] = useState(false);
     const [activePhase, setActivePhase] = useState(0);
     const [compileResult, setCompileResult] = useState(null);
@@ -37,7 +37,7 @@ const Home = () => {
     };
 
     const handleReset = () => {
-        setSourceCode('position = initial + rate * 60');
+        setSourceCode('');
         setIsSimulating(false);
         setActivePhase(0);
         setCompileResult(null);
