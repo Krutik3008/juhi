@@ -68,14 +68,14 @@ function tokenize(source) {
 function buildTokenStream(tokens) {
     return tokens.map(t => {
         const shortType = {
-            'Identifier': 'id', 'Constant': 'num', 'Float Constant': 'num',
+            'Identifier': 'id', 'Constant': 'num', 'Float Constant': 'float',
             'Keyword': 'keyword', 'Assignment Operator': '=', 'Addition Operator': '+',
             'Subtraction Operator': '-', 'Multiplication Operator': '*', 'Division Operator': '/',
             'Semicolon': ';', 'Left Parenthesis': '(', 'Right Parenthesis': ')',
             'Comma': ',', 'Less Than Operator': '<', 'Greater Than Operator': '>',
         };
         const tag = shortType[t.type] || t.lexeme;
-        if (['id', 'num', 'keyword'].includes(tag)) {
+        if (['id', 'num', 'float', 'keyword'].includes(tag)) {
             return `<${tag}, ${t.lexeme}>`;
         }
         return `<${t.lexeme}>`;
