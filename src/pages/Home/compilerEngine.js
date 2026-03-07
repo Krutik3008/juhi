@@ -132,51 +132,73 @@ function buildNode(tokens) {
 
 function renderAsciiTree(node) {
     if (!node) return '';
-    const lines = [];
-    buildAsciiLines(node, lines, 0);
-    return lines.join('\n');
+    const { lines } = printTree(node);
+    const padding = ' '.repeat(10);
+    return lines.map(l => padding + l).join('\n');
 }
 
-function buildAsciiLines(node, lines, indent) {
-    if (!node) return;
-
-    // Define padding based on indent
-    const pad = ' '.repeat(indent);
-
-    // If it's a leaf node, just add it
+function printTree(node) {
+    if (!node) return { lines: [], center: 0 };
     if (!node.left && !node.right) {
-        lines.push(pad + node.val);
-        return;
+        return { lines: [node.val], center: Math.floor(node.val.length / 2) };
     }
 
-    // Add root and branches
-    const rootPad = pad + '  '; // Shift root right to center over / \
-    lines.push(rootPad + node.val);
-    lines.push(rootPad + '/ \\');
+    const left = printTree(node.left);
+    const right = printTree(node.right);
 
-    // Add left and right children
-    if (node.left && !node.left.left && node.right && !node.right.left) {
-        // Both leaves -> put on same line (e.g., rate 60)
-        lines.push(pad + node.left.val + '   ' + node.right.val);
+    const lw = left.lines.length > 0 ? left.lines[0].length : 0;
+    const rw = right.lines.length > 0 ? right.lines[0].length : 0;
+
+    const gap = 1;
+
+    const maxLines = Math.max(left.lines.length, right.lines.length);
+    const childLines = [];
+    for (let i = 0; i < maxLines; i++) {
+        const lStr = i < left.lines.length ? left.lines[i] : ' '.repeat(lw);
+        const rStr = i < right.lines.length ? right.lines[i] : ' '.repeat(rw);
+        childLines.push(lStr + (lw > 0 && rw > 0 ? ' '.repeat(gap) : '') + rStr);
+    }
+
+    const lCenter = left.lines.length > 0 ? left.center : 0;
+    const rCenter = right.lines.length > 0 ? lw + gap + right.center : 0;
+
+    let pCenter = 0;
+    if (left.lines.length > 0 && right.lines.length > 0) {
+        pCenter = Math.floor((lCenter + rCenter) / 2);
+    } else if (left.lines.length > 0) {
+        pCenter = lCenter + 2;
     } else {
-        // Left child goes on current line, right child goes below, indented further right
-
-        // 1. Render left child at current indent
-        if (node.left && !node.left.left) {
-            lines.push(pad + node.left.val);
-        } else if (node.left) {
-            buildAsciiLines(node.left, lines, indent - 4 >= 0 ? indent - 4 : 0);
-        }
-
-        // 2. Render right child below, shifted right + 4
-        if (node.right && !node.right.left) {
-            lines.push(pad + ' '.repeat(node.val.length + 4) + node.right.val);
-        } else if (node.right) {
-            // Modify the last line added to include the right subtree root structure if they overlap
-            // Or just recursively build with higher indent
-            buildAsciiLines(node.right, lines, indent + 6);
-        }
+        pCenter = rCenter - 2;
     }
+
+    const valStart = Math.max(0, pCenter - Math.floor(node.val.length / 2));
+    const valEnd = valStart + node.val.length - 1;
+    const rootLine = ' '.repeat(valStart) + node.val;
+
+    let branchLine = '';
+    if (left.lines.length > 0 && right.lines.length > 0) {
+        const blArr = new Array(valEnd + 2).fill(' ');
+        if (valStart > 0) blArr[valStart - 1] = '/';
+        blArr[valEnd + 1] = '\\';
+        branchLine = blArr.join('').trimEnd();
+    } else if (left.lines.length > 0) {
+        const blArr = new Array(valStart).fill(' ');
+        if (valStart > 0) blArr[valStart - 1] = '/';
+        branchLine = blArr.join('').trimEnd();
+    } else if (right.lines.length > 0) {
+        const blArr = new Array(valEnd + 2).fill(' ');
+        blArr[valEnd + 1] = '\\';
+        branchLine = blArr.join('').trimEnd();
+    }
+
+    const allLines = [rootLine];
+    if (branchLine) allLines.push(branchLine);
+    allLines.push(...childLines);
+
+    const maxW = Math.max(...allLines.map(l => l.length));
+    const normalized = allLines.map(l => l.padEnd(maxW, ' '));
+
+    return { lines: normalized, center: pCenter };
 }
 
 // ============ PHASE 3: Semantic Analysis ============
