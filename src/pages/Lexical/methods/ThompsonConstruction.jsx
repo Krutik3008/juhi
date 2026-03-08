@@ -150,40 +150,46 @@ const generateReactFlowElements = (nfa) => {
 
     let edgeCounter = 1;
 
+    // Add a virtual "Start" arrow source
+    const startArrowSourceId = 'start-arrow-source';
+
     while (queue.length > 0) {
         const current = queue.shift();
         if (visited.has(current.id)) continue;
         visited.add(current.id);
 
         let nodeClass = 'nfa-node';
-        let label = current.id.toString();
-
-        if (current.id === nfa.start.id) {
-            nodeClass += ' start';
-            label += ' (Start)';
-        }
-        if (current.id === nfa.accept.id) {
-            nodeClass += ' accept';
-            label += ' (Accept)';
-        }
+        if (current.id === nfa.start.id) nodeClass += ' start';
+        if (current.id === nfa.accept.id) nodeClass += ' accept';
 
         nodesMap.set(current.id, {
             id: current.id.toString(),
-            data: { label: label },
+            data: { label: current.id.toString() },
             className: nodeClass,
-            position: { x: 0, y: 0 } // Handled by dagre
+            position: { x: 0, y: 0 }
         });
+
+        // If it's the start node, add an incoming "Start" arrow from left
+        if (current.id === nfa.start.id) {
+            rEdges.push({
+                id: 'start-arrow',
+                source: startArrowSourceId,
+                target: current.id.toString(),
+                type: 'straight',
+                animated: false,
+                markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--accent-primary)' },
+                style: { stroke: 'var(--accent-primary)', strokeWidth: 3 },
+                // Hidden dummy node handling
+            });
+        }
 
         for (let trans of current.transitions) {
             let edgeId = `e${edgeCounter++}`;
-
             let color = '#8b949e';
-            let strokeWidth = 1;
+            let strokeWidth = 2;
             if (trans.symbol !== 'ε') {
                 color = 'var(--accent-primary)';
-                if (trans.symbol === 'b') color = 'var(--success)';
-                if (trans.symbol === 'c') color = 'var(--warning)';
-                strokeWidth = 2;
+                strokeWidth = 3;
             }
 
             rEdges.push({
@@ -191,24 +197,44 @@ const generateReactFlowElements = (nfa) => {
                 source: current.id.toString(),
                 target: trans.to.id.toString(),
                 label: trans.symbol,
-                type: 'smoothstep',
+                type: 'straight', // Changed to straight for 'State Line' look
                 markerEnd: { type: MarkerType.ArrowClosed, color: color },
-                style: { stroke: color, strokeWidth }
+                style: { stroke: color, strokeWidth },
+                labelStyle: { fill: '#fff', fontWeight: 600, fontSize: '15px', transform: 'translateY(-15px)' },
+                labelBgStyle: { fill: 'transparent' }
             });
             queue.push(trans.to);
         }
     }
 
-    return { rNodes: Array.from(nodesMap.values()), rEdges };
+    // Add hidden source node for the start arrow
+    const nodesArray = Array.from(nodesMap.values());
+    nodesArray.push({
+        id: startArrowSourceId,
+        type: 'input',
+        data: { label: '' },
+        position: { x: -100, y: 0 },
+        style: { width: 0, height: 0, padding: 0, border: 'none', background: 'transparent', opacity: 0 },
+    });
+
+    return { rNodes: nodesArray, rEdges };
 };
 
 const getLayoutedElements = (nodes, edges, direction = 'LR') => {
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
-    dagreGraph.setGraph({ rankdir: direction, ranksep: 60, nodesep: 50 });
+    dagreGraph.setGraph({
+        rankdir: direction,
+        ranksep: 100,
+        nodesep: 80,
+        ranker: 'network-simplex' // Better for symmetric diamond shapes
+    });
 
     nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: 50, height: 50 });
+        // Dummy node for start arrow should be fixed
+        const w = node.id === 'start-arrow-source' ? 1 : 100;
+        const h = node.id === 'start-arrow-source' ? 1 : 100;
+        dagreGraph.setNode(node.id, { width: w, height: h });
     });
 
     edges.forEach((edge) => {
@@ -219,11 +245,20 @@ const getLayoutedElements = (nodes, edges, direction = 'LR') => {
 
     nodes.forEach((node) => {
         const nodePosition = dagreGraph.node(node.id);
+        const offset = node.id === 'start-arrow-source' ? 0 : 50;
         node.position = {
-            x: nodePosition.x - 25,
-            y: nodePosition.y - 25,
+            x: nodePosition.x - offset,
+            y: nodePosition.y - offset,
         };
     });
+
+    // Manually push the start-arrow-source further left if needed
+    const startArrow = nodes.find(n => n.id === 'start-arrow-source');
+    const startNodeId = edges.find(e => e.id === 'start-arrow')?.target;
+    const startNode = nodes.find(n => n.id === startNodeId);
+    if (startArrow && startNode) {
+        startArrow.position = { x: startNode.position.x - 80, y: startNode.position.y + 50 };
+    }
 
     return { nodes, edges };
 };
@@ -231,7 +266,7 @@ const getLayoutedElements = (nodes, edges, direction = 'LR') => {
 // --- Component ---
 
 const ThompsonConstruction = () => {
-    const [regex, setRegex] = useState('(a|b)*abb');
+    const [regex, setRegex] = useState('a|b');
     const [isSimulating, setIsSimulating] = useState(false);
     const [error, setError] = useState('');
     const [stats, setStats] = useState(null);
@@ -256,26 +291,82 @@ const ThompsonConstruction = () => {
 
     const generateGraph = () => {
         setError('');
-        if (!regex) {
-            setNodes([]);
-            setEdges([]);
-            return;
+        try {
+            if (!regex) {
+                setNodes([]);
+                setEdges([]);
+                return;
+            }
+
+            const postfix = toPostfix(regex.replace(/\s+/g, ''));
+            const nfa = buildNFA(postfix);
+
+            if (!nfa) {
+                setError('Invalid Regular Expression');
+                return;
+            }
+
+            const { rNodes, rEdges } = generateReactFlowElements(nfa);
+            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(rNodes, rEdges);
+
+            // --- BFS Re-numbering Pass ---
+            const idMap = new Map();
+            let nextId = 0;
+
+            const startOriginalId = nfa.start.id.toString();
+            const queueForId = [startOriginalId];
+            const visitedForId = new Set();
+
+            while (queueForId.length > 0) {
+                const currId = queueForId.shift();
+                if (visitedForId.has(currId)) continue;
+                visitedForId.add(currId);
+
+                idMap.set(currId, String(nextId));
+                nextId++;
+
+                const neighbors = layoutedEdges
+                    .filter(e => e.source === currId && e.id !== 'start-arrow')
+                    .map(e => e.target);
+
+                for (const n of neighbors) {
+                    queueForId.push(n);
+                }
+            }
+
+            // Map dummy start source
+            idMap.set('start-arrow-source', 'start-arrow-source');
+
+            // Apply IDs to nodes
+            const finalNodes = layoutedNodes.map(node => {
+                const newId = idMap.get(node.id) || node.id;
+                return {
+                    ...node,
+                    id: newId,
+                    data: {
+                        ...node.data,
+                        label: newId === 'start-arrow-source' ? '' : newId
+                    }
+                };
+            });
+
+            // Apply IDs to edges and fix label styles
+            const finalEdges = layoutedEdges.map(edge => ({
+                ...edge,
+                source: idMap.get(edge.source) || edge.source,
+                target: idMap.get(edge.target) || edge.target,
+                labelBgStyle: { fill: 'transparent', fillOpacity: 0 },
+                labelBgPadding: 0,
+                labelStyle: { fill: '#fff', fontWeight: 600, fontSize: '15px' }
+            }));
+
+            setNodes(finalNodes);
+            setEdges(finalEdges);
+            setStats(getNFAStats(nfa));
+        } catch (err) {
+            console.error('NFA Error:', err);
+            setError('Invalid Regular Expression syntax.');
         }
-
-        const postfix = toPostfix(regex.replace(/\s+/g, ''));
-        const nfa = buildNFA(postfix);
-
-        if (!nfa) {
-            setError('Invalid Regular Expression');
-            return;
-        }
-
-        const { rNodes, rEdges } = generateReactFlowElements(nfa);
-        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(rNodes, rEdges);
-
-        setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
-        setStats(getNFAStats(nfa));
     };
 
     const handleSimulate = () => {
@@ -290,19 +381,7 @@ const ThompsonConstruction = () => {
         setError('');
     };
 
-    // Pre-load default template if un-simulated (to match purely visual prior design)
-    useEffect(() => {
-        if (!isSimulating && nodes.length === 0) {
-            const postfix = toPostfix('(a|b)*abb');
-            const nfa = buildNFA(postfix);
-            if (nfa) {
-                const { rNodes, rEdges } = generateReactFlowElements(nfa);
-                const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(rNodes, rEdges);
-                setNodes(layoutedNodes);
-                setEdges(layoutedEdges);
-            }
-        }
-    }, [isSimulating, nodes.length]);
+    // Removed auto-load useEffect as per user request to only show graph on 'Generate' click
 
     return (
         <div className="unit-container">
@@ -342,7 +421,7 @@ const ThompsonConstruction = () => {
                         <button className="btn-primary rc-btn" onClick={handleSimulate}>
                             <Zap size={18} /> Generate NFA Map
                         </button>
-                        <button className="btn-secondary rc-btn" onClick={() => setRegex('')}>
+                        <button className="btn-secondary rc-btn" onClick={() => { setRegex(''); setNodes([]); setEdges([]); }}>
                             <Eraser size={18} /> Input Clear
                         </button>
                     </div>
@@ -355,24 +434,27 @@ const ThompsonConstruction = () => {
                 )}
             </div>
 
-            <div className="glass-panel flow-panel">
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    fitView
-                    attributionPosition="bottom-right"
-                    nodesDraggable={!isLocked}
-                    panOnDrag={!isLocked}
-                    zoomOnScroll={!isLocked}
-                    zoomOnPinch={!isLocked}
-                    zoomOnDoubleClick={!isLocked}
-                    className="nfa-react-flow"
-                    proOptions={{ hideAttribution: true }}
-                >
-                    <Background color="#30363d" gap={16} />
-                    <Controls onInteractiveChange={(interactive) => setIsLocked(!interactive)} />
-                </ReactFlow>
-            </div>
+            {nodes.length > 0 && (
+                <div className="glass-panel flow-panel">
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        fitView
+                        attributionPosition="bottom-right"
+                        nodesDraggable={!isLocked}
+                        panOnDrag={!isLocked}
+                        zoomOnScroll={false} // Always false to allow page scrolling
+                        panOnScroll={false}
+                        zoomOnPinch={!isLocked}
+                        zoomOnDoubleClick={!isLocked}
+                        className="nfa-react-flow"
+                        proOptions={{ hideAttribution: true }}
+                    >
+                        <Background color="#30363d" gap={16} />
+                        <Controls onInteractiveChange={(interactive) => setIsLocked(!interactive)} />
+                    </ReactFlow>
+                </div>
+            )}
 
             <div className="glass-panel legend-panel">
                 <div className="legend-item">

@@ -13,8 +13,8 @@
 
 .workspace-header h2 {
     display: flex;
-    align-items: start;
-    justify-content: start;
+    align-items: center;
+    justify-content: flex-start;
     gap: 16px;
     font-size: 2.2rem;
     font-weight: 800;
@@ -23,6 +23,7 @@
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    padding-left: 10px;
 }
 
 .back-link {
@@ -236,10 +237,23 @@
 }
 
 .nfa-react-flow .nfa-node.accept {
-    border-width: 4px;
+    border-width: 2px;
     border-color: #10b981;
     background: #064e3b;
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    position: relative;
+}
+
+.nfa-react-flow .nfa-node.accept::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    bottom: 3px;
+    border: 2px solid #10b981;
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .completion-summary {
