@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Share2, Play, RotateCcw } from 'lucide-react';
+import { Share2, Play, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import './ThompsonConstruction.css';
 import { ReactFlow, Background, Controls, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { motion } from 'framer-motion';
@@ -265,106 +267,74 @@ const ThompsonConstruction = () => {
     }, [isSimulating, nodes.length]);
 
     return (
-        <div className="simulation-workspace">
-            <div className="workspace-header">
-                <h2><Share2 size={24} className="inline-block mr-2" />Thompson Construction (RE to NFA)</h2>
+        <div className="unit-container">
+            <div className="workspace-header centered text-center">
+                <h2>
+                    <Link to="/unit1" className="back-link" title="Back to Unit I">
+                        <ArrowLeft size={24} />
+                    </Link>
+                    <Share2 size={28} className="header-icon" />
+                    Thompson Construction (RE to NFA)
+                </h2>
                 <p>Visualize the structural conversion of Regular Expressions to Non-Deterministic Finite Automata.</p>
             </div>
 
-            <div className="glass-panel mt-6 flex gap-4 p-4 items-end">
-                <div className="flex-1">
-                    <label className="text-sm text-muted mb-2 block flex justify-between">
+            <div className="glass-panel rc-panel">
+                <div className="rc-input-group">
+                    <label className="rc-label-row">
                         <span>Regular Expression</span>
-                        {error && <span className="text-red-400 font-bold">{error}</span>}
+                        {error && <span className="rc-error-text">{error}</span>}
                     </label>
                     <input
                         type="text"
                         value={regex}
                         onChange={(e) => setRegex(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white font-mono"
+                        className="rc-input"
                         disabled={isSimulating}
                         placeholder="e.g. (a|b)*abb or a(b|c)"
                     />
                 </div>
                 {!isSimulating ? (
-                    <button className="btn-primary mb-[2px]" onClick={handleSimulate}>
+                    <button className="btn-primary rc-btn" onClick={handleSimulate}>
                         <Play size={18} /> Generate NFA Map
                     </button>
                 ) : (
-                    <button className="btn-secondary mb-[2px]" onClick={handleReset}>
+                    <button className="btn-secondary rc-btn" onClick={handleReset}>
                         <RotateCcw size={18} /> Clear & Edit
                     </button>
                 )}
             </div>
 
-            <div className="glass-panel mt-6 relative" style={{ height: '500px' }}>
-                <style>
-                    {`
-                        .nfa-node {
-                            background: var(--bg-secondary);
-                            border: 2px solid var(--border-color);
-                            border-radius: 50%;
-                            width: 50px;
-                            height: 50px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            color: white;
-                            font-weight: bold;
-                            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-                        }
-                        .nfa-node.start {
-                            border-color: var(--accent-primary);
-                            box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
-                        }
-                        .nfa-node.accept {
-                            border-width: 4px;
-                            border-color: var(--success);
-                            box-shadow: 0 0 15px rgba(63, 185, 80, 0.3);
-                        }
-                        .react-flow__edge-path {
-                            stroke: #8b949e;
-                        }
-                        .react-flow__edge-text {
-                            fill: white;
-                            font-size: 14px;
-                            font-weight: bold;
-                        }
-                        .react-flow__edge-textbg {
-                            fill: var(--bg-tertiary);
-                            rx: 4;
-                            ry: 4;
-                        }
-                    `}
-                </style>
+            <div className="glass-panel flow-panel">
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
                     fitView
                     attributionPosition="bottom-right"
                     nodesDraggable={true}
+                    className="nfa-react-flow"
                 >
                     <Background color="#30363d" gap={16} />
                     <Controls />
                 </ReactFlow>
             </div>
 
-            <div className="flex gap-6 justify-center mt-6 p-4 glass-panel flex-wrap">
-                <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border-2 border-[var(--accent-primary)] bg-transparent"></div>
-                    <span className="text-sm">Start State</span>
+            <div className="glass-panel legend-panel">
+                <div className="legend-item">
+                    <div className="legend-circle start-circle"></div>
+                    <span className="legend-text">Start State</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border-4 border-[var(--success)] bg-transparent"></div>
-                    <span className="text-sm">Accepting State</span>
+                <div className="legend-item">
+                    <div className="legend-circle accept-circle"></div>
+                    <span className="legend-text">Accepting State</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-1 bg-[var(--text-muted)]"></div>
-                    <span className="text-sm">ε (Epsilon) Transition</span>
+                <div className="legend-item">
+                    <div className="legend-line epsilon-line"></div>
+                    <span className="legend-text">ε (Epsilon) Transition</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-1 bg-[var(--accent-primary)]"></div>
-                    <span className="text-sm">Input Transition</span>
+                <div className="legend-item">
+                    <div className="legend-line input-line"></div>
+                    <span className="legend-text">Input Transition</span>
                 </div>
             </div>
         </div>

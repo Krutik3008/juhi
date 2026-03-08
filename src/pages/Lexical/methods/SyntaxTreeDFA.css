@@ -1,0 +1,125 @@
+/* SyntaxTreeDFA.css */
+
+.unit-container {
+    padding-top: 50px;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+.workspace-header {
+    margin-bottom: 24px;
+}
+
+.workspace-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.workspace-header.centered {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.workspace-header.centered h2 {
+    justify-content: center;
+}
+
+.back-link {
+    color: var(--accent-primary);
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4px;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: white;
+}
+
+.header-icon {
+    color: var(--accent-primary, #3b82f6);
+}
+
+.syntax-panel {
+    margin-top: 24px;
+    padding: 32px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+}
+
+.icon-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: rgba(30, 58, 138, 0.2);
+    /* blue-900/20 */
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    /* blue-500/30 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: var(--accent-primary, #3b82f6);
+}
+
+.syntax-title {
+    font-size: 20px;
+    /* text-xl */
+    margin-bottom: 16px;
+    font-weight: bold;
+    color: white;
+}
+
+.syntax-desc {
+    color: var(--text-muted, #9ca3af);
+    max-width: 36rem;
+    /* max-w-xl */
+    margin-bottom: 24px;
+}
+
+.functions-list {
+    display: flex;
+    gap: 16px;
+}
+
+.function-tag {
+    padding: 4px 12px;
+    background-color: #1f2937;
+    /* gray-800 */
+    border-radius: 4px;
+    font-size: 14px;
+    color: #d1d5db;
+    /* gray-300 */
+    border: 1px solid #374151;
+    /* gray-700 */
+    font-family: monospace;
+}
+
+.notice-box {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #1f2937;
+    /* gray-800 */
+    width: 100%;
+    max-width: 42rem;
+    /* max-w-2xl */
+    color: var(--warning, #eab308);
+    background-color: rgba(113, 63, 18, 0.1);
+    /* yellow-900/10 */
+    padding: 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notice-icon {
+    display: inline;
+    margin-right: 8px;
+}

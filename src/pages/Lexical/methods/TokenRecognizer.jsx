@@ -1,13 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, RotateCcw, Type, ArrowLeft } from 'lucide-react';
+import { Play, RotateCcw, Type, ArrowLeft, Eraser, Dices } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import './TokenRecognizer.css';
 
 const TokenRecognizer = () => {
     const [inputCode, setInputCode] = useState('int count = 10;\nif (count > 0) {\n  count = count - 1;\n}');
     const [tokens, setTokens] = useState([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(-1);
+
+    const examples = [
+        'int count = 10;\nif (count > 0) {\n  count = count - 1;\n}',
+        'float total = 0.0;\nfor(int i=0; i<5; i++) {\n  total = total + i;\n}',
+        'int a = 5;\nif (a >= 3) {\n  a = a + 2;\n}',
+        'char grade = "A";\nreturn grade;'
+    ];
+
+    const loadExample = () => {
+        const randomIdx = Math.floor(Math.random() * examples.length);
+        setInputCode(examples[randomIdx]);
+    };
 
     // Simple Lexer logic for demonstration
     const analyzeTokens = (code) => {
@@ -17,7 +30,8 @@ const TokenRecognizer = () => {
             { type: 'KEYWORD', regex: /^(int|float|char|void|if|else|while|for|return|break|continue)\b/ },
             { type: 'IDENTIFIER', regex: /^[a-zA-Z_][a-zA-Z0-9_]*/ },
             { type: 'NUMBER', regex: /^\d+(\.\d+)?/ },
-            { type: 'OPERATOR', regex: /^(\+|-|\*|\/|=|==|!=|<|>|<=|>=|&&|\|\|)/ },
+            { type: 'STRING', regex: /^"([^"\\]|\\.)*"/ },
+            { type: 'OPERATOR', regex: /^(==|!=|<=|>=|&&|\|\||[+\-*/=<>])/ },
             { type: 'PUNCTUATION', regex: /^([;,\(\)\{\}\[\]])/ },
             { type: 'WHITESPACE', regex: /^\s+/ }
         ];
@@ -96,6 +110,7 @@ const TokenRecognizer = () => {
             case 'KEYWORD': return 'var(--accent-primary)';
             case 'IDENTIFIER': return 'var(--success)';
             case 'NUMBER': return '#ff7b72'; // Red-ish for numbers
+            case 'STRING': return '#a5d6ff'; // Light blue for strings
             case 'OPERATOR': return '#d2a8ff'; // Purple for operators
             case 'PUNCTUATION': return '#8b949e'; // Gray
             case 'UNKNOWN': return '#f85149'; // Error red
@@ -104,57 +119,66 @@ const TokenRecognizer = () => {
     };
 
     return (
-        <div className="simulation-workspace" style={{ padding: '50px' }}>
+        <div className="unit-container">
             <div className="workspace-header">
 
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Link to="/unit1" className="back-link inline-flex items-center text-accent hover:text-white transition-colors" title="Back to Unit I" style={{ color: 'var(--accent-primary)', display: 'inline-flex', marginRight: '4px' }}>
-                        <ArrowLeft size={30} />
+                <h2>
+                    <Link to="/unit1" className="back-link" title="Back to Unit I">
+                        <ArrowLeft size={24} />
                     </Link>
-                    <Type size={28} className="text-accent" />
+                    <Type size={28} className="header-icon" />
                     Token, Pattern & Lexeme Recognition
                 </h2>
                 <p>Watch as the lexer scans the character stream and groups them into meaningful tokens.</p>
             </div>
 
-            <div className="workspace-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginTop: '24px' }}>
-                <div className="glass-panel">
+            <div className="token-grid">
+                <div className="glass-panel panel-col">
                     <div className="panel-header mb-4">
                         <h3>Source Code</h3>
+                        {!isAnalyzing && (
+                            <button className="btn-secondary action-btn header-btn" onClick={loadExample} title="Load different example">
+                                <Dices size={16} /> Example Change
+                            </button>
+                        )}
                     </div>
                     <textarea
                         className="source-textarea"
                         value={inputCode}
                         onChange={(e) => setInputCode(e.target.value)}
                         disabled={isAnalyzing}
-                        style={{ height: '300px', width: '100%', fontFamily: 'var(--font-mono)' }}
                     />
-                    <div className="flex gap-4 mt-4">
+                    <div className="action-row">
                         {!isAnalyzing ? (
-                            <button className="btn-primary" onClick={handleAnalyze}>
-                                <Play size={18} /> Analyze
-                            </button>
+                            <>
+                                <button className="btn-primary action-btn" onClick={handleAnalyze}>
+                                    <Play size={18} /> Analyze
+                                </button>
+                                <button className="btn-secondary action-btn" onClick={() => setInputCode('')}>
+                                    <Eraser size={18} /> Input Clear
+                                </button>
+                            </>
                         ) : (
-                            <button className="btn-secondary" onClick={handleReset}>
+                            <button className="btn-secondary action-btn" onClick={handleReset}>
                                 <RotateCcw size={18} /> Reset
                             </button>
                         )}
                     </div>
                 </div>
 
-                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="glass-panel panel-col">
                     <div className="panel-header mb-4">
                         <h3>Token Stream</h3>
                         {tokens.length > 0 && (
-                            <span className="text-sm text-muted">
+                            <span className="token-count">
                                 {Math.min(currentIndex + 1, tokens.length)} / {tokens.length} tokens
                             </span>
                         )}
                     </div>
 
-                    <div className="token-stream-container flex-1 overflow-y-auto" style={{ maxHeight: '400px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignContent: 'flex-start' }}>
+                    <div className="token-stream-container">
                         {!isAnalyzing && (
-                            <div className="text-center text-muted w-full mt-10">
+                            <div className="empty-state">
                                 Click Analyze to start scanning
                             </div>
                         )}
@@ -167,21 +191,12 @@ const TokenRecognizer = () => {
                                         initial={{ opacity: 0, scale: 0.8, y: 10 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         className="token-chip"
-                                        style={{
-                                            padding: '4px 12px',
-                                            borderRadius: '16px',
-                                            background: 'rgba(255,255,255,0.05)',
-                                            border: `1px solid ${getTokenColor(token.type)}30`,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
+                                        style={{ borderColor: `${getTokenColor(token.type)}30` }}
                                     >
-                                        <span style={{ color: getTokenColor(token.type), fontWeight: 'bold', fontFamily: 'var(--font-mono)' }}>
+                                        <span className="token-chip-value" style={{ color: getTokenColor(token.type) }}>
                                             {token.value}
                                         </span>
-                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                        <span className="token-chip-type">
                                             {token.type}
                                         </span>
                                     </motion.div>
@@ -191,11 +206,12 @@ const TokenRecognizer = () => {
                     </div>
 
                     {isAnalyzing && (
-                        <div className="mt-4 pt-4 border-t border-gray-800">
-                            <div className="flex flex-wrap gap-4 text-sm justify-center">
+                        <div className="legend-container">
+                            <div className="legend-items">
                                 <span style={{ color: getTokenColor('KEYWORD') }}>● Keyword</span>
                                 <span style={{ color: getTokenColor('IDENTIFIER') }}>● Identifier</span>
                                 <span style={{ color: getTokenColor('NUMBER') }}>● Number</span>
+                                <span style={{ color: getTokenColor('STRING') }}>● String</span>
                                 <span style={{ color: getTokenColor('OPERATOR') }}>● Operator</span>
                             </div>
                         </div>

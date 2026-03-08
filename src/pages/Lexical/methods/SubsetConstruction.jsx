@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Layers, Play, ArrowRight, CornerDownRight } from 'lucide-react';
+import { Layers, Play, ArrowRight, CornerDownRight, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import './SubsetConstruction.css';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SubsetConstruction = () => {
@@ -59,28 +61,34 @@ const SubsetConstruction = () => {
     };
 
     return (
-        <div className="simulation-workspace">
-            <div className="workspace-header">
-                <h2><Layers size={24} className="inline-block mr-2" />Subset Construction (NFA to DFA)</h2>
-                <p>Compute ε-closures to group NFA states into single discrete DFA states.</p>
+        <div className="unit-container">
+            <div className="workspace-header centered text-center">
+                <h2>
+                    <Link to="/unit1" className="back-link" title="Back to Unit I">
+                        <ArrowLeft size={24} />
+                    </Link>
+                    <Layers size={28} className="header-icon" />
+                    Subset Construction (NFA to DFA)
+                </h2>
+                <p>Transform a Non-Deterministic Finite Automaton into its equivalent Deterministic form.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div className="subset-content">
 
                 {/* Simulation Controls & Steps */}
-                <div className="glass-panel p-6 flex flex-col h-[600px]">
-                    <div className="flex justify-between items-center mb-6">
+                <div className="glass-panel subset-panel">
+                    <div className="panel-header">
                         <h3>computations for (a|b)*abb</h3>
-                        <div className="flex gap-2">
+                        <div className="panel-controls">
                             <button
-                                className="btn-secondary px-3 py-1 text-sm"
+                                className="btn-secondary control-btn"
                                 onClick={handleReset}
                                 disabled={step === 0}
                             >
                                 Reset
                             </button>
                             <button
-                                className="btn-primary px-3 py-1 flex items-center gap-1 text-sm"
+                                className="btn-primary control-btn"
                                 onClick={handleNext}
                                 disabled={step === steps.length}
                             >
@@ -89,9 +97,9 @@ const SubsetConstruction = () => {
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                    <div className="steps-container">
                         {step === 0 && (
-                            <div className="text-center text-muted mt-20">
+                            <div className="text-muted empty-steps">
                                 Click Start to begin calculating ε-closures.
                             </div>
                         )}
@@ -101,17 +109,17 @@ const SubsetConstruction = () => {
                                     key={idx}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className={`p-4 rounded border border-gray-700 ${idx === step - 1 ? 'bg-blue-900/10 border-blue-500/50' : 'bg-gray-800/30'}`}
+                                    className={`step-card ${idx === step - 1 ? 'active-step' : 'inactive-step'}`}
                                 >
-                                    <h4 className={`font-bold ${idx === step - 1 ? 'text-accent' : 'text-gray-300'}`}>{s.title}</h4>
-                                    <p className="text-sm text-gray-400 mt-1 mb-3">{s.desc}</p>
+                                    <h4 className={`step-title ${idx === step - 1 ? 'active-title' : 'inactive-title'}`}>{s.title}</h4>
+                                    <p className="step-desc">{s.desc}</p>
 
-                                    <div className="bg-gray-900 rounded p-3 font-mono text-sm border border-gray-800">
-                                        <div className="flex items-center text-gray-300">
-                                            <span className="text-purple-400 font-bold mr-2">{s.action}</span>
+                                    <div className="step-computation">
+                                        <div className="action-row">
+                                            <span className="action-text">{s.action}</span>
                                         </div>
-                                        <div className="flex items-center mt-2 pl-4 text-green-400 font-bold">
-                                            <CornerDownRight size={14} className="mr-2 opacity-50" />
+                                        <div className="result-row">
+                                            <CornerDownRight size={14} className="result-icon" />
                                             {s.result}
                                         </div>
                                     </div>
@@ -122,42 +130,42 @@ const SubsetConstruction = () => {
                 </div>
 
                 {/* Transition Table Result */}
-                <div className="glass-panel p-6 flex flex-col h-[600px]">
+                <div className="glass-panel subset-panel">
                     <h3>DFA Transition Table (D-Tran)</h3>
-                    <p className="text-sm text-muted mb-6">The resulting deterministic transitions mapped from our subsets.</p>
+                    <p className="text-muted table-subtitle">The resulting deterministic transitions mapped from our subsets.</p>
 
-                    <div className="flex-1">
-                        <table className="data-table w-full text-center">
+                    <div className="table-wrapper">
+                        <table className="data-table subset-table">
                             <thead>
                                 <tr>
-                                    <th className="text-center">DFA State</th>
-                                    <th className="text-center">NFA States grouped</th>
-                                    <th className="text-center text-accent">Input 'a'</th>
-                                    <th className="text-center text-success">Input 'b'</th>
+                                    <th>DFA State</th>
+                                    <th>NFA States grouped</th>
+                                    <th className="th-accent">Input 'a'</th>
+                                    <th className="th-success">Input 'b'</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <motion.tr animate={{ opacity: step > 0 ? 1 : 0.2 }} className={step === 1 ? 'bg-blue-900/20' : ''}>
-                                    <td className="font-bold text-white">A (Start)</td>
-                                    <td className="text-xs text-gray-400 font-mono">1,2,3,4,7</td>
+                                <motion.tr animate={{ opacity: step > 0 ? 1 : 0.2 }} className={step === 1 ? 'tr-computing' : ''}>
+                                    <td className="td-state-col">A (Start)</td>
+                                    <td className="td-nfa-col">1,2,3,4,7</td>
                                     <td>{step > 1 ? 'B' : '-'}</td>
                                     <td>{step > 2 ? 'C' : '-'}</td>
                                 </motion.tr>
-                                <motion.tr animate={{ opacity: step > 1 ? 1 : 0.2 }} className={step === 4 || step === 5 ? 'bg-blue-900/20' : ''}>
-                                    <td className="font-bold text-white">B</td>
-                                    <td className="text-xs text-gray-400 font-mono">5,8,7,2,3,4,9</td>
+                                <motion.tr animate={{ opacity: step > 1 ? 1 : 0.2 }} className={step === 4 || step === 5 ? 'tr-computing' : ''}>
+                                    <td className="td-state-col">B</td>
+                                    <td className="td-nfa-col">5,8,7,2,3,4,9</td>
                                     <td>{step > 3 ? 'B' : '-'}</td>
                                     <td>{step > 4 ? 'D' : '-'}</td>
                                 </motion.tr>
                                 <motion.tr animate={{ opacity: step > 2 ? 1 : 0.2 }}>
-                                    <td className="font-bold text-white">C</td>
-                                    <td className="text-xs text-gray-400 font-mono">6,7,2,3,4</td>
+                                    <td className="td-state-col">C</td>
+                                    <td className="td-nfa-col">6,7,2,3,4</td>
                                     <td>{step > 5 ? 'B' : '-'}</td>
                                     <td>{step > 5 ? 'C' : '-'}</td>
                                 </motion.tr>
-                                <motion.tr animate={{ opacity: step > 4 ? 1 : 0.2 }} className={step === 6 ? 'bg-green-900/20 border-green-500/30' : ''}>
-                                    <td className="font-bold text-green-400">*D (Accept)</td>
-                                    <td className="text-xs text-gray-400 font-mono">6,9,7,2,3,4,10</td>
+                                <motion.tr animate={{ opacity: step > 4 ? 1 : 0.2 }} className={step === 6 ? 'tr-accepting' : ''}>
+                                    <td className="td-accept-state">*D (Accept)</td>
+                                    <td className="td-nfa-col">6,9,7,2,3,4,10</td>
                                     <td>{step > 5 ? 'B' : '-'}</td>
                                     <td>{step > 5 ? 'C' : '-'}</td>
                                 </motion.tr>
