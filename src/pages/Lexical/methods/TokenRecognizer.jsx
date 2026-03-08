@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, RotateCcw, Type } from 'lucide-react';
+import { Play, RotateCcw, Type, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const TokenRecognizer = () => {
     const [inputCode, setInputCode] = useState('int count = 10;\nif (count > 0) {\n  count = count - 1;\n}');
@@ -103,9 +104,16 @@ const TokenRecognizer = () => {
     };
 
     return (
-        <div className="simulation-workspace">
+        <div className="simulation-workspace" style={{ padding: '50px' }}>
             <div className="workspace-header">
-                <h2><Type size={24} className="inline-block mr-2" />Token, Pattern & Lexeme Recognition</h2>
+
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Link to="/unit1" className="back-link inline-flex items-center text-accent hover:text-white transition-colors" title="Back to Unit I" style={{ color: 'var(--accent-primary)', display: 'inline-flex', marginRight: '4px' }}>
+                        <ArrowLeft size={30} />
+                    </Link>
+                    <Type size={28} className="text-accent" />
+                    Token, Pattern & Lexeme Recognition
+                </h2>
                 <p>Watch as the lexer scans the character stream and groups them into meaningful tokens.</p>
             </div>
 
