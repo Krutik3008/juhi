@@ -115,10 +115,12 @@ function buildParseTree(tokens) {
         }
     }).filter(Boolean);
 
-    if (trees.length === 0) return '';
-    if (trees.length === 1) return renderAsciiTree(trees[0]);
+    let text = '';
+    if (trees.length === 0) text = '';
+    else if (trees.length === 1) text = renderAsciiTree(trees[0]);
+    else text = trees.map((tree, idx) => `Statement ${idx + 1}:\n${renderAsciiTree(tree)}`).join('\n\n');
 
-    return trees.map((tree, idx) => `Statement ${idx + 1}:\n${renderAsciiTree(tree)}`).join('\n\n');
+    return { text, treeData: trees };
 }
 
 function buildNode(tokens) {
@@ -232,12 +234,13 @@ function generateTAC(tokens) {
         const lhs = exprTokens[assignIdx - 1]?.lexeme || '?';
         const rhsTokens = exprTokens.slice(assignIdx + 1);
 
-        // For simple statements like `t1 = a + b`, we don't want to generate `t4 = a + b` AND `t1 = t4`
-        if (rhsTokens.length <= 3) {
-            // For simple expressions (1-3 tokens), just evaluate directly into the LHS
+        // Always use temporaries for expressions with operators
+        const hasOperator = rhsTokens.some(t => ['+', '-', '*', '/'].includes(t.lexeme));
+        if (rhsTokens.length <= 1 || !hasOperator) {
+            // Single value assignment: x = 5
             tacLines.push(`${lhs} = ${rhsTokens.map(t => t.lexeme).join(' ')}`);
         } else {
-            // For more complex expressions, use temporaries
+            // Expression with operators - always use temporaries
             const tempObj = { count: tempCount };
             const result = generateTACExpr(rhsTokens, tacLines, tempObj);
             tempCount = tempObj.count;
@@ -317,16 +320,38 @@ function optimizeCode(tacCode) {
     // Third pass: Common Subexpression Elimination (CSE)
     const finalOptimized = [];
     const exprToVar = {};
+    const varAlias = {}; // Track variable substitutions
 
     for (const line of optimized) {
         const parts = line.match(/^(\w+)\s*=\s*(.+)$/);
         if (parts) {
-            const [, dest, expr] = parts;
+            let [, dest, expr] = parts;
+            // Apply known aliases to the expression
+            expr = expr.replace(/\b(\w+)\b/g, (m) => varAlias[m] || m);
+
+            // Constant folding: if both operands are numbers, compute result
+            const constOp = expr.match(/^([\d.]+)\s*([+\-*/])\s*([\d.]+)$/);
+            if (constOp) {
+                const [, left, op, right] = constOp;
+                const a = parseFloat(left), b = parseFloat(right);
+                let result;
+                if (op === '+') result = a + b;
+                else if (op === '-') result = a - b;
+                else if (op === '*') result = a * b;
+                else if (op === '/') result = b !== 0 ? a / b : 0;
+                // Use clean number format
+                const resultStr = Number.isInteger(result) ? result.toString() : parseFloat(result.toFixed(4)).toString();
+                finalOptimized.push(`${dest} = ${resultStr}`);
+                continue;
+            }
+
             if (exprToVar[expr] && expr.match(/[+\-*/]/)) {
-                // expression already computed, replace with variable
+                // expression already computed — alias dest to the original var
+                varAlias[dest] = exprToVar[expr];
+                // Emit the alias so assembly generation can store it (e.g. MOV t2, R1)
                 finalOptimized.push(`${dest} = ${exprToVar[expr]}`);
             } else {
-                finalOptimized.push(line);
+                finalOptimized.push(`${dest} = ${expr}`);
                 if (expr.match(/[+\-*/]/)) {
                     exprToVar[expr] = dest;
                 }
@@ -353,7 +378,7 @@ function generateAssembly(optimizedCode) {
         const [, dest, expr] = parts;
 
         // Check if it's a binary operation
-        const binOp = expr.match(/^(\w+)\s*([+\-*/])\s*(\w+)$/);
+        const binOp = expr.match(/^([\w.]+)\s*([+\-*/])\s*([\w.]+)$/);
         if (binOp) {
             const [, left, op, right] = binOp;
             const reg = `R${regCount++}`;
@@ -362,7 +387,8 @@ function generateAssembly(optimizedCode) {
             if (varToReg[left]) {
                 asmLines.push(`MOV   ${reg}, ${varToReg[left]}`);
             } else {
-                asmLines.push(`LOAD  ${reg}, ${left}`);
+                const loadOp = left.match(/^[\d.]+$/) ? 'MOV  ' : 'LOAD ';
+                asmLines.push(`${loadOp} ${reg}, ${left}`);
             }
 
             // Apply operation
@@ -371,27 +397,27 @@ function generateAssembly(optimizedCode) {
             asmLines.push(`${opNames[op]}   ${reg}, ${rightOp}`);
 
             varToReg[dest] = reg;
+
+            // Emit store instruction
+            const storeOp = dest.match(/^t\d+$/) ? 'MOV  ' : 'STORE';
+            asmLines.push(`${storeOp} ${dest}, ${reg}`);
+
         } else {
             // Simple assignment
             const srcReg = varToReg[expr.trim()];
             if (srcReg) {
-                asmLines.push(`STORE ${dest}, ${srcReg}`);
+                const storeOp = dest.match(/^t\d+$/) ? 'MOV  ' : 'STORE';
+                asmLines.push(`${storeOp} ${dest}, ${srcReg}`);
                 varToReg[dest] = srcReg;
             } else {
                 const reg = `R${regCount++}`;
-                asmLines.push(`LOAD  ${reg}, ${expr.trim()}`);
+                const loadOp = expr.trim().match(/^[\d.]+$/) ? 'MOV  ' : 'LOAD ';
+                asmLines.push(`${loadOp} ${reg}, ${expr.trim()}`);
                 varToReg[dest] = reg;
-            }
-        }
-    }
 
-    // Store final result if not already stored
-    const lastLine = lines[lines.length - 1];
-    const lastDest = lastLine?.match(/^(\w+)\s*=/)?.[1];
-    if (lastDest && !lastDest.startsWith('t') && varToReg[lastDest]) {
-        const lastAsm = asmLines[asmLines.length - 1];
-        if (!lastAsm?.startsWith('STORE')) {
-            asmLines.push(`STORE ${lastDest}, ${varToReg[lastDest]}`);
+                const storeOp = dest.match(/^t\d+$/) ? 'MOV  ' : 'STORE';
+                asmLines.push(`${storeOp} ${dest}, ${reg}`);
+            }
         }
     }
 
@@ -402,7 +428,7 @@ function generateAssembly(optimizedCode) {
 export function compile(source) {
     const tokens = tokenize(source);
     const tokenStream = buildTokenStream(tokens);
-    const parseTree = buildParseTree(tokens);
+    const parseResult = buildParseTree(tokens);
     const symbolTable = semanticAnalysis(tokens);
     const tac = generateTAC(tokens);
     const optimized = optimizeCode(tac);
@@ -411,7 +437,8 @@ export function compile(source) {
     return {
         tokens,
         tokenStream,
-        parseTree,
+        parseTree: parseResult.text,
+        parseTreeData: parseResult.treeData,
         symbolTable,
         tac,
         optimized,
