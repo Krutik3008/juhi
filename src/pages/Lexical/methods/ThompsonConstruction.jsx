@@ -2,10 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { Share2, Play, RotateCcw, ArrowLeft, Dices, Eraser, CheckCircle2, Sparkles, HelpCircle, Info, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './ThompsonConstruction.css';
-import { ReactFlow, Background, Controls, MarkerType } from '@xyflow/react';
+import { ReactFlow, Background, Controls, MarkerType, Handle, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { motion } from 'framer-motion';
 import dagre from 'dagre';
+
+// --- Custom Components ---
+const NfaNode = ({ data, selected, id, className }) => {
+    return (
+        <div className={`nfa-node-container ${className || ''} ${selected ? 'selected' : ''}`}>
+            <Handle type="target" position={Position.Left} className="nfa-handle" style={{ left: '0' }} />
+            <div className="nfa-node-circle">
+                {data.label}
+            </div>
+            <Handle type="source" position={Position.Right} className="nfa-handle" style={{ right: '0' }} />
+        </div>
+    );
+};
+
+const nodeTypes = {
+    nfaNode: NfaNode,
+};
 
 // --- Regex Parsing and NFA Construction ---
 
@@ -164,6 +181,7 @@ const generateReactFlowElements = (nfa) => {
 
         nodesMap.set(current.id, {
             id: current.id.toString(),
+            type: 'nfaNode', // Use the custom node type
             data: { label: current.id.toString() },
             className: nodeClass,
             position: { x: 0, y: 0 }
@@ -183,6 +201,7 @@ const generateReactFlowElements = (nfa) => {
             });
         }
 
+        // Process all transitions regardless of target visitor status
         for (let trans of current.transitions) {
             let edgeId = `e${edgeCounter++}`;
             let color = '#8b949e';
@@ -197,12 +216,15 @@ const generateReactFlowElements = (nfa) => {
                 source: current.id.toString(),
                 target: trans.to.id.toString(),
                 label: trans.symbol,
-                type: 'straight', // Changed to straight for 'State Line' look
+                type: 'straight',
                 markerEnd: { type: MarkerType.ArrowClosed, color: color },
-                style: { stroke: color, strokeWidth },
-                labelStyle: { fill: '#fff', fontWeight: 600, fontSize: '15px', transform: 'translateY(-15px)' },
-                labelBgStyle: { fill: 'transparent' }
+                style: { stroke: color, strokeWidth: strokeWidth },
+                labelStyle: { fill: '#fff', fontWeight: 600, fontSize: '15px' },
+                labelBgStyle: { fill: 'transparent', fillOpacity: 0 },
+                labelBgPadding: 0,
             });
+
+            // Only push to queue if target hasn't been visited yet
             queue.push(trans.to);
         }
     }
@@ -299,70 +321,43 @@ const ThompsonConstruction = () => {
             }
 
             const postfix = toPostfix(regex.replace(/\s+/g, ''));
-            const nfa = buildNFA(postfix);
+            const builtNfa = buildNFA(postfix);
 
-            if (!nfa) {
+            if (!builtNfa) {
                 setError('Invalid Regular Expression');
                 return;
             }
 
-            const { rNodes, rEdges } = generateReactFlowElements(nfa);
-            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(rNodes, rEdges);
-
-            // --- BFS Re-numbering Pass ---
-            const idMap = new Map();
+            // --- Robust Source-Level Re-numbering ---
+            const stateIdMap = new Map();
             let nextId = 0;
+            const stateQueue = [builtNfa.start];
+            const stateVisited = new Set();
 
-            const startOriginalId = nfa.start.id.toString();
-            const queueForId = [startOriginalId];
-            const visitedForId = new Set();
+            while (stateQueue.length > 0) {
+                const state = stateQueue.shift();
+                if (stateVisited.has(state)) continue;
+                stateVisited.add(state);
 
-            while (queueForId.length > 0) {
-                const currId = queueForId.shift();
-                if (visitedForId.has(currId)) continue;
-                visitedForId.add(currId);
+                stateIdMap.set(state, nextId++);
 
-                idMap.set(currId, String(nextId));
-                nextId++;
-
-                const neighbors = layoutedEdges
-                    .filter(e => e.source === currId && e.id !== 'start-arrow')
-                    .map(e => e.target);
-
-                for (const n of neighbors) {
-                    queueForId.push(n);
+                for (const trans of state.transitions) {
+                    stateQueue.push(trans.to);
                 }
             }
 
-            // Map dummy start source
-            idMap.set('start-arrow-source', 'start-arrow-source');
-
-            // Apply IDs to nodes
-            const finalNodes = layoutedNodes.map(node => {
-                const newId = idMap.get(node.id) || node.id;
-                return {
-                    ...node,
-                    id: newId,
-                    data: {
-                        ...node.data,
-                        label: newId === 'start-arrow-source' ? '' : newId
-                    }
-                };
+            // Apply final IDs to State objects permanently
+            stateVisited.forEach(state => {
+                state.id = stateIdMap.get(state);
             });
 
-            // Apply IDs to edges and fix label styles
-            const finalEdges = layoutedEdges.map(edge => ({
-                ...edge,
-                source: idMap.get(edge.source) || edge.source,
-                target: idMap.get(edge.target) || edge.target,
-                labelBgStyle: { fill: 'transparent', fillOpacity: 0 },
-                labelBgPadding: 0,
-                labelStyle: { fill: '#fff', fontWeight: 600, fontSize: '15px' }
-            }));
+            // Now generate elements using the final state IDs
+            const { rNodes, rEdges } = generateReactFlowElements(builtNfa);
+            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(rNodes, rEdges);
 
-            setNodes(finalNodes);
-            setEdges(finalEdges);
-            setStats(getNFAStats(nfa));
+            setNodes(layoutedNodes);
+            setEdges(layoutedEdges);
+            setStats(getNFAStats(builtNfa));
         } catch (err) {
             console.error('NFA Error:', err);
             setError('Invalid Regular Expression syntax.');
@@ -439,11 +434,12 @@ const ThompsonConstruction = () => {
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
+                        nodeTypes={nodeTypes}
                         fitView
                         attributionPosition="bottom-right"
                         nodesDraggable={!isLocked}
                         panOnDrag={!isLocked}
-                        zoomOnScroll={false} // Always false to allow page scrolling
+                        zoomOnScroll={false}
                         panOnScroll={false}
                         zoomOnPinch={!isLocked}
                         zoomOnDoubleClick={!isLocked}
