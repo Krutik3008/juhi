@@ -61,6 +61,10 @@ function tokenize(source) {
             tokens.push({ lexeme: s[i], type: 'Unknown' });
             i++;
         }
+
+        if (s.length > 0 && tokens.length > 0 && tokens[tokens.length - 1].type !== 'Semicolon') {
+            tokens.push({ lexeme: ';', type: 'Semicolon' });
+        }
     }
     return tokens;
 }
@@ -84,22 +88,37 @@ function buildTokenStream(tokens) {
 
 // ============ PHASE 2: Syntax Analysis (Parse Tree) ============
 function buildParseTree(tokens) {
-    const exprTokens = tokens.filter(t =>
-        t.type !== 'Semicolon' && t.type !== 'Keyword'
-    );
-
-    const assignIdx = exprTokens.findIndex(t => t.type === 'Assignment Operator');
-
-    let tree;
-    if (assignIdx === -1) {
-        tree = buildNode(exprTokens);
-    } else {
-        const lhs = exprTokens[assignIdx - 1]?.lexeme || '?';
-        const rhsTokens = exprTokens.slice(assignIdx + 1);
-        tree = { val: '=', left: { val: lhs }, right: buildNode(rhsTokens) };
+    const statements = [];
+    let currentStmt = [];
+    for (const t of tokens) {
+        if (t.type === 'Semicolon') {
+            if (currentStmt.length > 0) statements.push(currentStmt);
+            currentStmt = [];
+        } else {
+            currentStmt.push(t);
+        }
     }
+    if (currentStmt.length > 0) statements.push(currentStmt);
 
-    return renderAsciiTree(tree);
+    const trees = statements.map(stmt => {
+        const exprTokens = stmt.filter(t => t.type !== 'Keyword');
+        if (exprTokens.length === 0) return null;
+
+        const assignIdx = exprTokens.findIndex(t => t.type === 'Assignment Operator');
+
+        if (assignIdx === -1) {
+            return buildNode(exprTokens);
+        } else {
+            const lhs = exprTokens[assignIdx - 1]?.lexeme || '?';
+            const rhsTokens = exprTokens.slice(assignIdx + 1);
+            return { val: '=', left: { val: lhs }, right: buildNode(rhsTokens) };
+        }
+    }).filter(Boolean);
+
+    if (trees.length === 0) return '';
+    if (trees.length === 1) return renderAsciiTree(trees[0]);
+
+    return trees.map((tree, idx) => `Statement ${idx + 1}:\n${renderAsciiTree(tree)}`).join('\n\n');
 }
 
 function buildNode(tokens) {
@@ -184,21 +203,49 @@ function semanticAnalysis(tokens) {
 
 // ============ PHASE 4: Intermediate Code (Three-Address Code) ============
 function generateTAC(tokens) {
-    const exprTokens = tokens.filter(t =>
-        t.type !== 'Semicolon' && t.type !== 'Keyword'
-    );
-
-    const assignIdx = exprTokens.findIndex(t => t.type === 'Assignment Operator');
-    if (assignIdx === -1) return exprTokens.map(t => t.lexeme).join(' ');
-
-    const lhs = exprTokens[assignIdx - 1]?.lexeme || '?';
-    const rhsTokens = exprTokens.slice(assignIdx + 1);
+    const statements = [];
+    let currentStmt = [];
+    for (const t of tokens) {
+        if (t.type === 'Semicolon') {
+            if (currentStmt.length > 0) statements.push(currentStmt);
+            currentStmt = [];
+        } else {
+            currentStmt.push(t);
+        }
+    }
+    if (currentStmt.length > 0) statements.push(currentStmt);
 
     const tacLines = [];
     let tempCount = 1;
 
-    const result = generateTACExpr(rhsTokens, tacLines, { count: tempCount });
-    tacLines.push(`${lhs} = ${result}`);
+    for (const stmt of statements) {
+        const exprTokens = stmt.filter(t => t.type !== 'Keyword');
+        if (exprTokens.length === 0) continue;
+
+        // Check if there's an assignment operator in this statement
+        const assignIdx = exprTokens.findIndex(t => t.type === 'Assignment Operator');
+        if (assignIdx === -1) {
+            tacLines.push(exprTokens.map(t => t.lexeme).join(' '));
+            continue;
+        }
+
+        const lhs = exprTokens[assignIdx - 1]?.lexeme || '?';
+        const rhsTokens = exprTokens.slice(assignIdx + 1);
+
+        // For simple statements like `t1 = a + b`, we don't want to generate `t4 = a + b` AND `t1 = t4`
+        if (rhsTokens.length <= 3) {
+            // For simple expressions (1-3 tokens), just evaluate directly into the LHS
+            tacLines.push(`${lhs} = ${rhsTokens.map(t => t.lexeme).join(' ')}`);
+        } else {
+            // For more complex expressions, use temporaries
+            const tempObj = { count: tempCount };
+            const result = generateTACExpr(rhsTokens, tacLines, tempObj);
+            tempCount = tempObj.count;
+            if (lhs !== result) {
+                tacLines.push(`${lhs} = ${result}`);
+            }
+        }
+    }
 
     return tacLines.join('\n');
 }
@@ -234,31 +281,62 @@ function generateTACExpr(tokens, lines, temp) {
 
 // ============ PHASE 5: Code Optimization ============
 function optimizeCode(tacCode) {
-    const lines = tacCode.split('\n');
+    let lines = tacCode.split('\n').filter(l => l.trim() !== '');
     if (lines.length <= 1) return tacCode;
 
-    // Simple copy propagation: if last line is `x = tN` and previous defines tN, inline it
-    const optimized = [...lines];
+    // First pass: remove identity assignments like `t1 = t1`
+    lines = lines.filter(line => {
+        const match = line.match(/^(\w+)\s*=\s*(\w+)$/);
+        return !(match && match[1] === match[2]);
+    });
 
-    // Try to eliminate simple copy assignments like `x = t2` where t2 = a + t1
-    if (optimized.length >= 2) {
-        const lastLine = optimized[optimized.length - 1];
-        const match = lastLine.match(/^(\w+)\s*=\s*(t\d+)$/);
+    // Second pass: eliminate simple copy assignments `x = tN` where tN is temporary
+    const optimized = [];
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const match = line.match(/^(\w+)\s*=\s*(t\d+)$/);
         if (match) {
             const [, target, tempVar] = match;
-            // Find where tempVar is defined
-            for (let i = 0; i < optimized.length - 1; i++) {
-                if (optimized[i].startsWith(tempVar + ' = ')) {
-                    const expr = optimized[i].substring(tempVar.length + 3);
-                    optimized[i] = `${target} = ${expr}`;
-                    optimized.pop(); // Remove the copy line
+            let found = false;
+            for (let j = optimized.length - 1; j >= 0; j--) {
+                if (optimized[j].startsWith(tempVar + ' = ')) {
+                    const expr = optimized[j].substring(tempVar.length + 3);
+                    optimized[j] = `${target} = ${expr}`;
+                    found = true;
                     break;
                 }
             }
+            if (!found) {
+                optimized.push(line);
+            }
+        } else {
+            optimized.push(line);
         }
     }
 
-    return optimized.join('\n');
+    // Third pass: Common Subexpression Elimination (CSE)
+    const finalOptimized = [];
+    const exprToVar = {};
+
+    for (const line of optimized) {
+        const parts = line.match(/^(\w+)\s*=\s*(.+)$/);
+        if (parts) {
+            const [, dest, expr] = parts;
+            if (exprToVar[expr] && expr.match(/[+\-*/]/)) {
+                // expression already computed, replace with variable
+                finalOptimized.push(`${dest} = ${exprToVar[expr]}`);
+            } else {
+                finalOptimized.push(line);
+                if (expr.match(/[+\-*/]/)) {
+                    exprToVar[expr] = dest;
+                }
+            }
+        } else {
+            finalOptimized.push(line);
+        }
+    }
+
+    return finalOptimized.join('\n');
 }
 
 // ============ PHASE 6: Code Generation (Assembly) ============

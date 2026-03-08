@@ -1,0 +1,105 @@
+[
+  {
+    "tokens": [
+      {
+        "lexeme": "t1",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": "=",
+        "type": "Assignment Operator"
+      },
+      {
+        "lexeme": "a",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": "+",
+        "type": "Addition Operator"
+      },
+      {
+        "lexeme": "b",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": ";",
+        "type": "Semicolon"
+      },
+      {
+        "lexeme": "t2",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": "=",
+        "type": "Assignment Operator"
+      },
+      {
+        "lexeme": "a",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": "+",
+        "type": "Addition Operator"
+      },
+      {
+        "lexeme": "b",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": ";",
+        "type": "Semicolon"
+      },
+      {
+        "lexeme": "t3",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": "=",
+        "type": "Assignment Operator"
+      },
+      {
+        "lexeme": "t1",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": "+",
+        "type": "Addition Operator"
+      },
+      {
+        "lexeme": "t2",
+        "type": "Identifier"
+      },
+      {
+        "lexeme": ";",
+        "type": "Semicolon"
+      }
+    ],
+    "tokenStream": "<id, t1>  <=>  <id, a>  <+>  <id, b>  <;>  <id, t2>  <=>  <id, a>  <+>  <id, b>  <;>  <id, t3>  <=>  <id, t1>  <+>  <id, t2>  <;>",
+    "parseTree": "=\n├── t1\n└── +\n    ├── a\n    └── b\n\n---\n\n=\n├── t2\n└── +\n    ├── a\n    └── b\n\n---\n\n=\n├── t3\n└── +\n    ├── t1\n    └── t2",
+    "symbolTable": [
+      {
+        "name": "t1",
+        "type": "float"
+      },
+      {
+        "name": "a",
+        "type": "float"
+      },
+      {
+        "name": "b",
+        "type": "float"
+      },
+      {
+        "name": "t2",
+        "type": "float"
+      },
+      {
+        "name": "t3",
+        "type": "float"
+      }
+    ],
+    "tac": "t1 = a + b\nt2 = a + b\nt3 = t1 + t2",
+    "optimized": "t1 = a + b\nt2 = t1\nt3 = t1 + t2",
+    "assembly": "LOAD  R1, a\nADD   R1, b\nSTORE t2, R1\nMOV   R2, R1\nADD   R2, R1"
+  }
+]
