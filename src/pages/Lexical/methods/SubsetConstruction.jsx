@@ -750,7 +750,6 @@ const SubsetConstruction = () => {
                                             <Controls showInteractive={false} />
                                         </ReactFlow>
                                     </div>
-                                   
                                 </motion.div>
                             )}        <div className="subset-bottom-spacer"></div>
                         </motion.div>
