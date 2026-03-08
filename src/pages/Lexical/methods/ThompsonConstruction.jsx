@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Share2, Play, RotateCcw, ArrowLeft, Dices, Eraser } from 'lucide-react';
+import { Share2, Play, RotateCcw, ArrowLeft, Dices, Eraser, CheckCircle2, Sparkles, HelpCircle, Info, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './ThompsonConstruction.css';
 import { ReactFlow, Background, Controls, MarkerType } from '@xyflow/react';
@@ -338,18 +338,20 @@ const ThompsonConstruction = () => {
                     />
                 </div>
                 {!isSimulating ? (
-                    <div className="actions-row mt-4">
+                    <div className="actions-row mt-6">
                         <button className="btn-primary rc-btn" onClick={handleSimulate}>
-                            <Play size={18} /> Generate NFA Map
+                            <Zap size={18} /> Generate NFA Map
                         </button>
                         <button className="btn-secondary rc-btn" onClick={() => setRegex('')}>
                             <Eraser size={18} /> Input Clear
                         </button>
                     </div>
                 ) : (
-                    <button className="btn-secondary rc-btn" onClick={handleReset} style={{ alignSelf: 'flex-end' }}>
-                        <RotateCcw size={18} /> Clear & Edit
-                    </button>
+                    <div className="actions-row mt-6">
+                        <button className="btn-secondary rc-btn" onClick={handleReset}>
+                            <RotateCcw size={18} /> Clear & Edit
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -391,18 +393,46 @@ const ThompsonConstruction = () => {
                 </div>
             </div>
 
-            {isSimulating && stats && (
-                <div className="glass-panel completion-summary mt-4">
-                    <h4>✨ NFA Synthesis Complete</h4>
-                    <p>The Regular Expression `{regex}` has been structurally converted to an NFA.</p>
-                    <ul className="summary-list">
-                        <li>The construction resulted in {stats.states} distinct states.</li>
-                        <li>A total of {stats.transitions} transitions were created, including {stats.epsilons} epsilon (ε) moves.</li>
-                        <li>The `start` and `accept` states correctly encapsulate the RE logic using Thompson nodes.</li>
-                    </ul>
-                </div>
-            )}
-        </div>
+            {
+                isSimulating && stats && (
+                    <motion.div
+                        className="glass-panel completion-summary mt-8"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                        <h4><Sparkles size={24} className="text-yellow-400" /> NFA Synthesis Complete</h4>
+                        <p className="mb-6 opacity-80">The Regular Expression <code className="bg-white/10 px-2 py-1 rounded">`{regex}`</code> has been successfully converted to an NFA structure.</p>
+                        <ul className="summary-list">
+                            <motion.li
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                            >
+                                <CheckCircle2 size={20} className="summary-icon" />
+                                <span>The construction resulted in <strong>{stats.states}</strong> distinct states.</span>
+                            </motion.li>
+                            <motion.li
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                            >
+                                <Zap size={20} className="summary-icon" />
+                                <span>A total of <strong>{stats.transitions}</strong> transitions were created, including <strong>{stats.epsilons}</strong> epsilon (ε) moves.</span>
+                            </motion.li>
+                            <motion.li
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.4 }}
+                            >
+                                <Info size={20} className="summary-icon" />
+                                <span>The <b>start</b> and <b>accept</b> states correctly encapsulate the RE logic using Thompson nodes.</span>
+                            </motion.li>
+                        </ul>
+                    </motion.div>
+                )
+            }
+        </div >
     );
 };
 
