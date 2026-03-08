@@ -411,22 +411,20 @@ const ThompsonConstruction = () => {
                         placeholder="e.g. (a|b)*abb or a(b|c)"
                     />
                 </div>
-                {!isSimulating ? (
-                    <div className="actions-row mt-6">
+                <div className="actions-row mt-6">
+                    {!isSimulating ? (
                         <button className="btn-primary rc-btn" onClick={handleSimulate}>
                             <Zap size={18} /> Generate NFA Map
                         </button>
-                        <button className="btn-secondary rc-btn" onClick={() => { setRegex(''); setNodes([]); setEdges([]); }}>
-                            <Eraser size={18} /> Input Clear
-                        </button>
-                    </div>
-                ) : (
-                    <div className="actions-row mt-6">
+                    ) : (
                         <button className="btn-secondary rc-btn" onClick={handleReset}>
                             <RotateCcw size={18} /> Clear & Edit
                         </button>
-                    </div>
-                )}
+                    )}
+                    <button className="btn-secondary rc-btn" onClick={() => { setRegex(''); setNodes([]); setEdges([]); setIsSimulating(false); }}>
+                        <Eraser size={18} /> Input Clear
+                    </button>
+                </div>
             </div>
 
             {nodes.length > 0 && (
@@ -452,20 +450,20 @@ const ThompsonConstruction = () => {
                 </div>
             )}
 
-            <div className="glass-panel legend-panel">
-                <div className="legend-item">
+            <div className="glass-panel nfa-legend-panel">
+                <div className="nfa-legend-item">
                     <div className="legend-circle start-circle"></div>
                     <span className="legend-text">Start State</span>
                 </div>
-                <div className="legend-item">
+                <div className="nfa-legend-item">
                     <div className="legend-circle accept-circle"></div>
                     <span className="legend-text">Accepting State</span>
                 </div>
-                <div className="legend-item">
+                <div className="nfa-legend-item">
                     <div className="legend-line epsilon-line"></div>
                     <span className="legend-text">ε (Epsilon) Transition</span>
                 </div>
-                <div className="legend-item">
+                <div className="nfa-legend-item">
                     <div className="legend-line input-line"></div>
                     <span className="legend-text">Input Transition</span>
                 </div>

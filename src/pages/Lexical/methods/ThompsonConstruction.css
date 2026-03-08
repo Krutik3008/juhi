@@ -131,7 +131,7 @@
     overflow: hidden;
 }
 
-.legend-panel {
+.nfa-legend-panel {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -150,12 +150,12 @@
     /* Hide scrollbar for Chrome/Safari */
 }
 
-.legend-panel::-webkit-scrollbar {
+.nfa-legend-panel::-webkit-scrollbar {
     display: none;
     /* Hide scrollbar for Chrome/Safari */
 }
 
-.legend-item {
+.nfa-legend-item {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -172,7 +172,7 @@
     margin: 0 10px;
 }
 
-.legend-item:hover {
+.nfa-legend-item:hover {
     transform: translateY(-4px);
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
