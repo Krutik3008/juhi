@@ -90,6 +90,14 @@
     color: var(--accent-primary, #3b82f6);
 }
 
+.header-btn {
+    position: absolute;
+    right: 0;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    height: auto;
+}
+
 .input-group {
     display: flex;
     flex-direction: column;

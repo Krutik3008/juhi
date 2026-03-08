@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { SplitSquareHorizontal, Play, RotateCcw, ArrowLeft } from 'lucide-react';
+import { SplitSquareHorizontal, Play, RotateCcw, ArrowLeft, Dices, Eraser } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './InputBuffering.css';
 
@@ -8,6 +8,19 @@ const InputBuffering = () => {
     const [inputCode, setInputCode] = useState('position = initial + rate * 60;');
     const [isSimulating, setIsSimulating] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
+
+    const examples = [
+        'position = initial + rate * 60;',
+        'x = a + b * 10;',
+        'count = count + 1;',
+        'area = pi * r * r;',
+        'val = 5 * (10 + 2);'
+    ];
+
+    const loadExample = () => {
+        const randomIdx = Math.floor(Math.random() * examples.length);
+        setInputCode(examples[randomIdx]);
+    };
 
     // Buffer sizing
     const BUFFER_SIZE = 10;
@@ -113,6 +126,11 @@ const InputBuffering = () => {
                 <div className="glass-panel panel-col">
                     <div className="panel-header mb-4">
                         <h3>Input Configuration</h3>
+                        {!isSimulating && (
+                            <button className="btn-secondary action-btn header-btn" onClick={loadExample} title="Load different example">
+                                <Dices size={16} /> Example Change
+                            </button>
+                        )}
                     </div>
                     <div className="input-group">
                         <label className="input-label">Lexer Character Stream</label>
@@ -127,9 +145,14 @@ const InputBuffering = () => {
                     </div>
                     <div className="actions-row">
                         {!isSimulating ? (
-                            <button className="btn-primary action-btn" onClick={handleSimulate}>
-                                <Play size={18} /> Run Buffer Simulation
-                            </button>
+                            <>
+                                <button className="btn-primary action-btn" onClick={handleSimulate}>
+                                    <Play size={18} /> Run Buffer Simulation
+                                </button>
+                                <button className="btn-secondary action-btn" onClick={() => setInputCode('')}>
+                                    <Eraser size={18} /> Input Clear
+                                </button>
+                            </>
                         ) : (
                             <button className="btn-secondary action-btn" onClick={handleReset}>
                                 <RotateCcw size={18} /> Reset
@@ -245,9 +268,9 @@ const InputBuffering = () => {
                                 <h4>🎉 Simulation Complete</h4>
                                 <p>The lexer has successfully scanned the entire input stream using the two-buffer scheme.</p>
                                 <ul className="summary-list">
-                                    <li><strong>Sentinels used:</strong> The `eof` tokens allowed the lexer to detect buffer boundaries without extra checks.</li>
-                                    <li><strong>Memory Efficiency:</strong> Only 20 characters were in RAM at any time, regardless of input length.</li>
-                                    <li><strong>Lexemes Discovered:</strong> The `lb` and `fwd` pointers successfully isolated each meaningful token.</li>
+                                    <li>The `eof` tokens allowed the lexer to detect buffer boundaries without extra checks across {Math.ceil(inputCode.length / BUFFER_SIZE)} buffer loads.</li>
+                                    <li>Only {BUFFER_SIZE * 2} characters were in RAM at any time while scanning all {inputCode.length} characters of your input.</li>
+                                    <li>The `lb` and `fwd` pointers successfully isolated each meaningful token in the character stream.</li>
                                 </ul>
                                 <button className="btn-secondary mt-4" onClick={handleReset}>
                                     <RotateCcw size={16} /> Run Again
