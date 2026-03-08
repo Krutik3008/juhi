@@ -7,7 +7,6 @@ import TokenRecognizer from './methods/TokenRecognizer';
 import InputBuffering from './methods/InputBuffering';
 import ThompsonConstruction from './methods/ThompsonConstruction';
 import SubsetConstruction from './methods/SubsetConstruction';
-import DFAMinimization from './methods/DFAMinimization';
 import SyntaxTreeDFA from './methods/SyntaxTreeDFA';
 
 const LexicalOverview = () => {
@@ -37,12 +36,6 @@ const LexicalOverview = () => {
             title: 'Subset Construction (NFA to DFA)',
             desc: 'Compute ε-closures and build DFA transition tables from an NFA.',
             icon: <Layers size={24} />
-        },
-        {
-            id: 'minimization',
-            title: 'DFA Minimization',
-            desc: 'Optimize a DFA by merging equivalent states using partition algorithms.',
-            icon: <Hexagon size={24} />
         },
         {
             id: 'syntax-tree',
@@ -92,7 +85,6 @@ const LexicalHome = () => {
             <Route path="/input-buffering" element={<InputBuffering />} />
             <Route path="/thompson" element={<ThompsonConstruction />} />
             <Route path="/subset" element={<SubsetConstruction />} />
-            <Route path="/minimization" element={<DFAMinimization />} />
             <Route path="/syntax-tree" element={<SyntaxTreeDFA />} />
         </Routes>
     );
