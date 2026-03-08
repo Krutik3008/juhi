@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Share2, Play, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Share2, Play, RotateCcw, ArrowLeft, Dices, Eraser } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './ThompsonConstruction.css';
 import { ReactFlow, Background, Controls, MarkerType } from '@xyflow/react';
@@ -118,6 +118,28 @@ const buildNFA = (postfix) => {
     }
 };
 
+const getNFAStats = (nfa) => {
+    if (!nfa) return { states: 0, transitions: 0, epsilons: 0 };
+    const visited = new Set();
+    const queue = [nfa.start];
+    let states = 0;
+    let transitions = 0;
+    let epsilons = 0;
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (visited.has(current.id)) continue;
+        visited.add(current.id);
+        states++;
+        for (let trans of current.transitions) {
+            transitions++;
+            if (trans.symbol === 'ε') epsilons++;
+            queue.push(trans.to);
+        }
+    }
+    return { states, transitions, epsilons };
+};
+
 const generateReactFlowElements = (nfa) => {
     if (!nfa) return { rNodes: [], rEdges: [] };
 
@@ -212,6 +234,21 @@ const ThompsonConstruction = () => {
     const [regex, setRegex] = useState('(a|b)*abb');
     const [isSimulating, setIsSimulating] = useState(false);
     const [error, setError] = useState('');
+    const [stats, setStats] = useState(null);
+    const [isLocked, setIsLocked] = useState(false);
+
+    const regexExamples = [
+        '(a|b)*abb',
+        'a(b|c)*',
+        'a*b*',
+        '(a|b|c)',
+        'ab*c(d|e)'
+    ];
+
+    const loadExample = () => {
+        const randomIdx = Math.floor(Math.random() * regexExamples.length);
+        setRegex(regexExamples[randomIdx]);
+    };
 
     // Graph State
     const [nodes, setNodes] = useState([]);
@@ -238,6 +275,7 @@ const ThompsonConstruction = () => {
 
         setNodes(layoutedNodes);
         setEdges(layoutedEdges);
+        setStats(getNFAStats(nfa));
     };
 
     const handleSimulate = () => {
@@ -281,10 +319,15 @@ const ThompsonConstruction = () => {
 
             <div className="glass-panel rc-panel">
                 <div className="rc-input-group">
-                    <label className="rc-label-row">
-                        <span>Regular Expression</span>
-                        {error && <span className="rc-error-text">{error}</span>}
-                    </label>
+                    <div className="panel-header mb-4">
+                        <h3>Regular Expression</h3>
+                        {!isSimulating && (
+                            <button className="btn-secondary action-btn header-btn" onClick={loadExample} title="Load different example">
+                                <Dices size={16} /> Example Change
+                            </button>
+                        )}
+                    </div>
+                    {error && <div className="rc-error-text mb-2">{error}</div>}
                     <input
                         type="text"
                         value={regex}
@@ -295,11 +338,16 @@ const ThompsonConstruction = () => {
                     />
                 </div>
                 {!isSimulating ? (
-                    <button className="btn-primary rc-btn" onClick={handleSimulate}>
-                        <Play size={18} /> Generate NFA Map
-                    </button>
+                    <div className="actions-row mt-4">
+                        <button className="btn-primary rc-btn" onClick={handleSimulate}>
+                            <Play size={18} /> Generate NFA Map
+                        </button>
+                        <button className="btn-secondary rc-btn" onClick={() => setRegex('')}>
+                            <Eraser size={18} /> Input Clear
+                        </button>
+                    </div>
                 ) : (
-                    <button className="btn-secondary rc-btn" onClick={handleReset}>
+                    <button className="btn-secondary rc-btn" onClick={handleReset} style={{ alignSelf: 'flex-end' }}>
                         <RotateCcw size={18} /> Clear & Edit
                     </button>
                 )}
@@ -311,11 +359,16 @@ const ThompsonConstruction = () => {
                     edges={edges}
                     fitView
                     attributionPosition="bottom-right"
-                    nodesDraggable={true}
+                    nodesDraggable={!isLocked}
+                    panOnDrag={!isLocked}
+                    zoomOnScroll={!isLocked}
+                    zoomOnPinch={!isLocked}
+                    zoomOnDoubleClick={!isLocked}
                     className="nfa-react-flow"
+                    proOptions={{ hideAttribution: true }}
                 >
                     <Background color="#30363d" gap={16} />
-                    <Controls />
+                    <Controls onInteractiveChange={(interactive) => setIsLocked(!interactive)} />
                 </ReactFlow>
             </div>
 
@@ -337,6 +390,18 @@ const ThompsonConstruction = () => {
                     <span className="legend-text">Input Transition</span>
                 </div>
             </div>
+
+            {isSimulating && stats && (
+                <div className="glass-panel completion-summary mt-4">
+                    <h4>✨ NFA Synthesis Complete</h4>
+                    <p>The Regular Expression `{regex}` has been structurally converted to an NFA.</p>
+                    <ul className="summary-list">
+                        <li>The construction resulted in {stats.states} distinct states.</li>
+                        <li>A total of {stats.transitions} transitions were created, including {stats.epsilons} epsilon (ε) moves.</li>
+                        <li>The `start` and `accept` states correctly encapsulate the RE logic using Thompson nodes.</li>
+                    </ul>
+                </div>
+            )}
         </div>
     );
 };

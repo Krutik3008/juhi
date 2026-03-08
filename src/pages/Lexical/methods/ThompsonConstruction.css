@@ -6,13 +6,10 @@
     padding-right: 50px;
 }
 
-.workspace-header.centered {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-.workspace-header.centered h2 {
-    justify-content: center;
+.workspace-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .workspace-header h2 {
@@ -40,9 +37,10 @@
 .rc-panel {
     margin-top: 24px;
     display: flex;
+    flex-direction: column;
     gap: 16px;
-    padding: 16px;
-    align-items: flex-end;
+    padding: 24px;
+    align-items: stretch;
 }
 
 .rc-input-group {
@@ -61,6 +59,38 @@
     color: #f87171;
     /* red-400 */
     font-weight: bold;
+    font-size: 14px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary, white);
+}
+
+.header-btn {
+    position: absolute;
+    right: 0;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    height: auto;
+}
+
+.actions-row {
+    display: flex;
+    justify-content: flex-start;
+    gap: 16px;
 }
 
 .rc-input {
@@ -83,7 +113,8 @@
 .flow-panel {
     margin-top: 24px;
     position: relative;
-    height: 500px;
+    height: 600px;
+    min-height: 500px;
 }
 
 .legend-panel {
@@ -173,4 +204,41 @@
     fill: var(--bg-tertiary);
     rx: 4;
     ry: 4;
+}
+
+.completion-summary {
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 800px;
+    margin: 24px auto 0;
+    text-align: left;
+}
+
+.completion-summary h4 {
+    color: var(--accent-primary, #3b82f6);
+    margin-bottom: 12px;
+    font-size: 1.25rem;
+}
+
+.summary-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.summary-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.summary-list li::before {
+    content: "✓";
+    color: var(--success, #22c55e);
+    font-weight: bold;
 }
