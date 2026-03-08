@@ -6,7 +6,7 @@ import './SyntaxTreeDFA.css';
 const SyntaxTreeDFA = () => {
     return (
         <div className="unit-container">
-            <div className="workspace-header centered text-center">
+            <div className="workspace-header">
                 <h2>
                     <Link to="/unit1" className="back-link" title="Back to Unit I">
                         <ArrowLeft size={24} />
