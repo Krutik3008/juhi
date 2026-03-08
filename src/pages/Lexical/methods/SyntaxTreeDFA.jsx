@@ -11,13 +11,15 @@ import './SyntaxTreeDFA.css';
 const SyntaxLeafNode = ({ data }) => (
     <div className="syntax-tree-node">
         <Handle type="target" position={Position.Top} className="syntax-handle" />
-        <div className="syntax-node-nullable" style={{ background: data.nullable ? '#10b981' : '#f43f5e' }}>
-            {data.nullable ? 'T' : 'F'}
+        <div className="syntax-node-top-row">
+            <span className="syntax-node-fp">{`{${(data.firstpos || []).join(',')}}`}</span>
+            <span className="syntax-node-nullable-dot" style={{ background: data.nullable ? '#10b981' : '#f43f5e' }}>
+                {data.nullable ? 'T' : 'F'}
+            </span>
+            <span className="syntax-node-lp">{`{${(data.lastpos || []).join(',')}}`}</span>
         </div>
-        <div className="syntax-node-firstpos">{`{${(data.firstpos || []).join(',')}}`}</div>
-        <div className="syntax-node-lastpos">{`{${(data.lastpos || []).join(',')}}`}</div>
-        <div className="syntax-node-label">{data.label}</div>
-        {data.pos && <div className="syntax-node-pos" style={{ position: 'absolute', bottom: '-40px', color: '#6366f1', fontWeight: 'bold' }}>{data.pos}</div>}
+        <div className="syntax-node-symbol">{data.label}</div>
+        {data.pos && <div className="syntax-node-pos-label">{data.pos}</div>}
         <Handle type="source" position={Position.Bottom} className="syntax-handle" />
     </div>
 );
@@ -39,13 +41,34 @@ const nodeTypes = {
 
 const SyntaxTreeDFA = () => {
     const [regex, setRegex] = useState('(a|b)*abb#');
-    const [activeStage, setActiveStage] = useState('config'); // 'config', 'tree', 'followpos', 'dfa'
+    const [activeStage, setActiveStage] = useState('config'); // 'config', 'tree', 'followpos', 'computation', 'table', 'dfa'
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
     const [treeData, setTreeData] = useState(null);
     const [followposTable, setFollowposTable] = useState([]);
     const [dfaResults, setDfaResults] = useState(null);
+    const [computationSteps, setComputationSteps] = useState([]);
+    const [transitionTable, setTransitionTable] = useState({ alphabet: [], rows: [] });
     const [treeFlow, setTreeFlow] = useState({ nodes: [], edges: [] });
     const [dfaFlow, setDfaFlow] = useState({ nodes: [], edges: [] });
+
+    // --- Auto-advance Logic (5 stages) ---
+    useEffect(() => {
+        let timer;
+        if (isAutoPlaying) {
+            if (activeStage === 'tree') {
+                timer = setTimeout(() => setActiveStage('followpos'), 2000);
+            } else if (activeStage === 'followpos') {
+                timer = setTimeout(() => setActiveStage('computation'), 2000);
+            } else if (activeStage === 'computation') {
+                timer = setTimeout(() => setActiveStage('table'), 2000);
+            } else if (activeStage === 'table') {
+                timer = setTimeout(() => setActiveStage('dfa'), 2000);
+            } else if (activeStage === 'dfa') {
+                setIsAutoPlaying(false);
+            }
+        }
+        return () => clearTimeout(timer);
+    }, [isAutoPlaying, activeStage]);
 
     const examples = ['(a|b)*abb#', 'a(b|c)*#', 'ab*c#', 'a*b*#'];
 
@@ -170,17 +193,32 @@ const SyntaxTreeDFA = () => {
         dStates.push({ label: 'A', positions: startPos });
 
         const transitions = [];
+        const compSteps = []; // Capture computation details
+
+        // Record initial state
+        compSteps.push({
+            type: 'init',
+            label: 'A',
+            desc: `Initial state = firstpos(root) = {${startPos.join(', ')}} = A`
+        });
+
         let i = 0;
         while (i < statesQueue.length) {
             const currentSet = statesQueue[i];
             const currentLabel = dStates[i].label;
+            const stateComputation = { stateLabel: currentLabel, positions: [...currentSet], transitions: [] };
 
             alphabet.forEach(symbol => {
                 const nextPositions = new Set();
+                const matchedPositions = [];
+                const followSets = [];
+
                 currentSet.forEach(pos => {
                     const leaf = treeInfo.leafNodes.find(l => l.pos === pos);
                     if (leaf.label === symbol) {
+                        matchedPositions.push(pos);
                         const follow = followTable.find(f => f.pos === pos).follow;
+                        followSets.push({ pos, follow: [...follow] });
                         follow.forEach(p => nextPositions.add(p));
                     }
                 });
@@ -195,8 +233,18 @@ const SyntaxTreeDFA = () => {
                         statesQueue.push(sortedNext);
                     }
                     transitions.push({ from: currentLabel, to: existing.label, label: symbol });
+
+                    stateComputation.transitions.push({
+                        symbol,
+                        matchedPositions,
+                        followSets,
+                        resultPositions: sortedNext,
+                        resultLabel: existing.label
+                    });
                 }
             });
+
+            compSteps.push({ type: 'state', ...stateComputation });
             i++;
         }
 
@@ -207,14 +255,14 @@ const SyntaxTreeDFA = () => {
             if (s.label === 'A') s.isStart = true;
         });
 
-        return { dStates, transitions };
+        return { dStates, transitions, compSteps, alphabet };
     };
 
     const getLayoutedElements = (nodes, edges, direction = 'TB') => {
         const g = new dagre.graphlib.Graph();
-        g.setGraph({ rankdir: direction, ranksep: 80, nodesep: 50 });
+        g.setGraph({ rankdir: direction, ranksep: direction === 'TB' ? 100 : 80, nodesep: direction === 'TB' ? 60 : 50 });
         g.setDefaultEdgeLabel(() => ({}));
-        nodes.forEach(n => g.setNode(n.id, { width: 80, height: 80 }));
+        nodes.forEach(n => g.setNode(n.id, { width: direction === 'TB' ? 120 : 80, height: direction === 'TB' ? 100 : 80 }));
         edges.forEach(e => g.setEdge(e.source, e.target));
         dagre.layout(g);
         return nodes.map(n => {
@@ -222,6 +270,8 @@ const SyntaxTreeDFA = () => {
             return { ...n, position: { x: nodeWithPos.x - 40, y: nodeWithPos.y - 40 } };
         });
     };
+
+    // handleNextStage removed — auto-advance handles progression
 
     const startSimulation = () => {
         if (!regex.endsWith('#')) {
@@ -269,10 +319,24 @@ const SyntaxTreeDFA = () => {
 
         setFollowposTable(treeInfo.followTable);
         setDfaResults(dfa);
+        setComputationSteps(dfa.compSteps);
+
+        // Build transition table
+        const tTable = { alphabet: dfa.alphabet, rows: [] };
+        dfa.dStates.forEach(s => {
+            const row = { state: s.label, isAccept: s.isAccept };
+            dfa.alphabet.forEach(sym => {
+                const t = dfa.transitions.find(tr => tr.from === s.label && tr.label === sym);
+                row[sym] = t ? t.to : '-';
+            });
+            tTable.rows.push(row);
+        });
+        setTransitionTable(tTable);
+
         setTreeFlow({ nodes: getLayoutedElements(nNodes, nEdges), edges: nEdges });
         setDfaFlow({ nodes: getLayoutedElements(dNodes, dEdges, 'LR'), edges: dEdges });
 
-        setActiveStage('dfa');
+        setActiveStage('tree');
         setIsAutoPlaying(true);
     };
 
@@ -321,53 +385,54 @@ const SyntaxTreeDFA = () => {
                     <div className="syntax-actions-row mt-6">
                         {activeStage === 'config' ? (
                             <button className="syntax-btn syntax-btn-primary" onClick={startSimulation}>
-                                <Play size={18} /> Generate Full Journey
+                                <Play size={18} /> Start Simulation
                             </button>
                         ) : (
-                            <button className="syntax-btn syntax-btn-secondary" onClick={() => setActiveStage('config')}>
+                            <button className="syntax-btn syntax-btn-secondary" onClick={() => { setActiveStage('config'); setIsAutoPlaying(false); }}>
                                 <RotateCcw size={18} /> Clear & Edit
                             </button>
                         )}
-                        <button className="syntax-btn syntax-btn-secondary" onClick={() => { setRegex(''); setActiveStage('config'); }}>
+                        <button className="syntax-btn syntax-btn-secondary" onClick={() => { setRegex(''); setActiveStage('config'); setIsAutoPlaying(false); }}>
                             <Eraser size={18} /> Input Clear
                         </button>
                     </div>
                 </div>
 
-                {/* Journey Tracker */}
-                {activeStage !== 'config' && (
-                    <div className="syntax-journey-tracker mb-12">
-                        <div className="syntax-phases-container">
-                            {[
-                                { id: 1, title: 'Syntax Tree', desc: 'Positional map', stage: 'tree' },
-                                { id: 2, title: 'Followpos', desc: 'Direct logic table', stage: 'followpos' },
-                                { id: 3, title: 'Final DFA', desc: 'Direct construction', stage: 'dfa' }
-                            ].map((phase, idx, arr) => {
-                                const isCompleted = (phase.stage === 'tree' && ['followpos', 'dfa'].includes(activeStage)) ||
-                                    (phase.stage === 'followpos' && activeStage === 'dfa');
-                                const isActive = activeStage === phase.stage;
+                {/* Journey Tracker - 5 Phases (always visible) */}
+                <div className="syntax-journey-tracker mb-12">
+                    <div className="syntax-phases-container">
+                        {[
+                            { id: 1, title: 'Syntax Tree', desc: 'Positional map', stage: 'tree' },
+                            { id: 2, title: 'Followpos', desc: 'Direct logic table', stage: 'followpos' },
+                            { id: 3, title: 'Computation', desc: 'State calculation', stage: 'computation' },
+                            { id: 4, title: 'Transition Table', desc: 'State mapping', stage: 'table' },
+                            { id: 5, title: 'Final DFA', desc: 'Direct construction', stage: 'dfa' }
+                        ].map((phase, idx, arr) => {
+                            const stageOrder = ['tree', 'followpos', 'computation', 'table', 'dfa'];
+                            const currentIdx = stageOrder.indexOf(activeStage);
+                            const phaseIdx = stageOrder.indexOf(phase.stage);
+                            const isCompleted = phaseIdx < currentIdx;
+                            const isActive = activeStage === phase.stage;
 
-                                return (
-                                    <React.Fragment key={phase.id}>
-                                        <div
-                                            className={`syntax-phase-box cursor-pointer ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
-                                            onClick={() => setActiveStage(phase.stage)}
-                                        >
-                                            <div className="syntax-phase-num">{phase.id}</div>
-                                            <div className="syntax-phase-info">
-                                                <h4>{phase.title}</h4>
-                                                <p>{phase.desc}</p>
-                                            </div>
+                            return (
+                                <React.Fragment key={phase.id}>
+                                    <div
+                                        className={`syntax-phase-box ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                                    >
+                                        <div className="syntax-phase-num">{phase.id}</div>
+                                        <div className="syntax-phase-info">
+                                            <h4>{phase.title}</h4>
+                                            <p>{phase.desc}</p>
                                         </div>
-                                        {idx < arr.length - 1 && (
-                                            <ArrowRight className={`syntax-phase-arrow ${isCompleted ? 'active' : ''}`} size={20} />
-                                        )}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </div>
+                                    </div>
+                                    {idx < arr.length - 1 && (
+                                        <ArrowRight className={`syntax-phase-arrow ${isCompleted ? 'active' : ''}`} size={20} />
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                     </div>
-                )}
+                </div>
 
                 <AnimatePresence>
                     {activeStage !== 'config' && (
@@ -378,7 +443,7 @@ const SyntaxTreeDFA = () => {
                             className="syntax-journey-stack"
                         >
                             {/* Step 1: Syntax Tree */}
-                            {activeStage !== 'config' && (
+                            {['tree', 'followpos', 'computation', 'table', 'dfa'].includes(activeStage) && (
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
@@ -407,7 +472,7 @@ const SyntaxTreeDFA = () => {
                             )}
 
                             {/* Step 2: Followpos Table */}
-                            {activeStage !== 'config' && (
+                            {['followpos', 'computation', 'table', 'dfa'].includes(activeStage) && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -442,18 +507,117 @@ const SyntaxTreeDFA = () => {
                                 </motion.div>
                             )}
 
-                            {/* Step 3: Final DFA */}
-                            {activeStage !== 'config' && (
+                            {/* Step 3: DFA State Computation */}
+                            {['computation', 'table', 'dfa'].includes(activeStage) && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
+                                    className="syntax-stage-card"
+                                >
+                                    <div className="syntax-stage-header mb-6">
+                                        <div className="syntax-stage-title">
+                                            <CornerDownRight size={24} className="text-amber-400" />
+                                            <h3>Step 3: DFA State Computation</h3>
+                                        </div>
+                                        <div className="syntax-badge">δ(State, Symbol)</div>
+                                    </div>
+                                    <div className="syntax-scroll-area syntax-computation-area">
+                                        {computationSteps.map((step, idx) => (
+                                            <div key={idx} className="syntax-comp-step">
+                                                {step.type === 'init' ? (
+                                                    <div className="syntax-comp-init">
+                                                        <span className="syntax-comp-label">Initial State:</span>
+                                                        <span className="syntax-comp-formula">{step.desc}</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="syntax-comp-state-block">
+                                                        <div className="syntax-comp-state-header">
+                                                            <span className="syntax-comp-state-name">State {step.stateLabel}</span>
+                                                            <span className="syntax-comp-state-pos">= {`{${step.positions.join(', ')}}`}</span>
+                                                        </div>
+                                                        {step.transitions.map((t, tidx) => (
+                                                            <div key={tidx} className="syntax-comp-transition">
+                                                                <span className="syntax-comp-delta">δ({step.stateLabel}, {t.symbol})</span>
+                                                                <span className="syntax-comp-eq"> = </span>
+                                                                <span className="syntax-comp-unions">
+                                                                    {t.followSets.map((fs, fi) => (
+                                                                        <span key={fi}>
+                                                                            {fi > 0 && ' ∪ '}followpos({fs.pos})
+                                                                        </span>
+                                                                    ))}
+                                                                </span>
+                                                                <span className="syntax-comp-eq"> = </span>
+                                                                <span className="syntax-comp-unions">
+                                                                    {t.followSets.map((fs, fi) => (
+                                                                        <span key={fi}>
+                                                                            {fi > 0 && ' ∪ '}{`{${fs.follow.join(', ')}}`}
+                                                                        </span>
+                                                                    ))}
+                                                                </span>
+                                                                <span className="syntax-comp-eq"> = </span>
+                                                                <span className="syntax-comp-result">{`{${t.resultPositions.join(', ')}}`} = <strong>{t.resultLabel}</strong></span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* Step 4: DFA Transition Table */}
+                            {['table', 'dfa'].includes(activeStage) && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="syntax-stage-card"
+                                >
+                                    <div className="syntax-stage-header mb-6">
+                                        <div className="syntax-stage-title">
+                                            <List size={24} className="text-green-400" />
+                                            <h3>Step 4: DFA Transition Table</h3>
+                                        </div>
+                                        <div className="syntax-badge success">Complete</div>
+                                    </div>
+                                    <div className="syntax-scroll-area">
+                                        <table className="syntax-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>State</th>
+                                                    {transitionTable.alphabet.map(sym => (
+                                                        <th key={sym}>{sym}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {transitionTable.rows.map(row => (
+                                                    <tr key={row.state} className={row.isAccept ? 'syntax-accept-row' : ''}>
+                                                        <td className="font-bold">
+                                                            {row.isAccept ? '* ' : ''}{row.state}
+                                                        </td>
+                                                        {transitionTable.alphabet.map(sym => (
+                                                            <td key={sym}>{row[sym]}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* Step 5: Final DFA */}
+                            {activeStage === 'dfa' && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
                                     className="syntax-stage-card"
                                 >
                                     <div className="syntax-stage-header mb-6">
                                         <div className="syntax-stage-title">
                                             <Network size={24} className="text-green-400" />
-                                            <h3>Step 3: Direct DFA Result</h3>
+                                            <h3>Step 5: Direct DFA Result</h3>
                                         </div>
                                         <div className="syntax-badge success">Directly Constructed</div>
                                     </div>
@@ -473,7 +637,7 @@ const SyntaxTreeDFA = () => {
                             )}
 
                             {/* Completion Summary - Only show in DFA stage */}
-                            {activeStage !== 'config' && (
+                            {activeStage === 'dfa' && (
                                 <motion.div
                                     className="syntax-rc-panel syntax-completion-summary mt-8"
                                     initial={{ opacity: 0, y: 20 }}

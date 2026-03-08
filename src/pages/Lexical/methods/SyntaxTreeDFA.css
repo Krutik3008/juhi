@@ -50,6 +50,69 @@
     color: white;
 }
 
+/* Syntax Tree Node */
+.syntax-tree-node {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+    padding: 4px 6px;
+    background: rgba(17, 24, 39, 0.9);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+}
+
+.syntax-node-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 2px 4px;
+}
+
+.syntax-node-fp {
+    color: #34d399;
+    font-size: 0.65rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.syntax-node-lp {
+    color: #f472b6;
+    font-size: 0.65rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.syntax-node-nullable-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.syntax-node-symbol {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+    margin-top: 2px;
+}
+
+.syntax-node-pos-label {
+    color: #818cf8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-top: 1px;
+}
+
 .syntax-main-grid {
     width: 100%;
 }
@@ -541,4 +604,111 @@
 
 .syntax-bottom-spacer {
     height: 50px;
+}
+
+/* Step 3: DFA Computation Styles */
+.syntax-computation-area {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.syntax-comp-step {
+    margin-bottom: 16px;
+}
+
+.syntax-comp-init {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 12px;
+    font-size: 0.95rem;
+}
+
+.syntax-comp-label {
+    color: #fbbf24;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.syntax-comp-formula {
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+}
+
+.syntax-comp-state-block {
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+}
+
+.syntax-comp-state-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.syntax-comp-state-name {
+    color: #818cf8;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.syntax-comp-state-pos {
+    color: #94a3b8;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+}
+
+.syntax-comp-transition {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0;
+    font-size: 0.88rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: #cbd5e1;
+}
+
+.syntax-comp-delta {
+    color: #a78bfa;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.syntax-comp-eq {
+    color: #64748b;
+    font-weight: 700;
+}
+
+.syntax-comp-unions {
+    color: #94a3b8;
+}
+
+.syntax-comp-result {
+    color: #34d399;
+    font-weight: 600;
+}
+
+.syntax-comp-result strong {
+    color: #fbbf24;
+    font-size: 0.95rem;
+}
+
+/* Step 4: Transition Table Accept Row */
+.syntax-accept-row {
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+.syntax-accept-row td:first-child {
+    color: #34d399 !important;
+    font-weight: 800 !important;
 }
