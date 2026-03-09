@@ -305,6 +305,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
+    margin-top: 10px;
 }
 
 .firstfollow-stage-title h3 {
@@ -312,6 +313,8 @@
     font-weight: 700;
     color: #f1f5f9;
     margin: 0;
+        margin-top: 10px;
+
 }
 
 .firstfollow-badge {

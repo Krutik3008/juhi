@@ -174,7 +174,7 @@ const FirstAndFollow = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.8 }}
-                                    className="mt-8 p-6 bg-gray-900/80 border border-gray-700/50 rounded-2xl text-sm"
+                                    className="mt-6 p-6 bg-gray-900/80 border border-gray-700/50 rounded-2xl text-sm"
                                 >
                                     <h4 className="text-white mb-3 font-semibold flex items-center gap-2 text-lg">
                                         <Info size={18} className="text-indigo-400" /> Computation Notes
