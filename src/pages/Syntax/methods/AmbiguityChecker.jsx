@@ -155,7 +155,7 @@ function findMultipleDerivations(grammarText, targetText, maxResults = 2) {
 }
 
 const AmbiguityChecker = () => {
-    const [grammar, setGrammar] = useState("S -> as | sa | ε");
+    const [grammar, setGrammar] = useState("S -> aS | Sa | ε");
     const [targetString, setTargetString] = useState("aaaa");
     const [results, setResults] = useState([]);
     const [isChecking, setIsChecking] = useState(false);
@@ -267,7 +267,7 @@ const AmbiguityChecker = () => {
                                 value={grammar}
                                 onChange={(e) => setGrammar(e.target.value)}
                                 disabled={activeStage !== 'config'}
-                                placeholder="S -> as | sa | ε"
+                                placeholder="S -> aS | Sa | ε"
                             />
                         </div>
 
