@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AlignLeft, Play, RotateCcw } from 'lucide-react';
+import { AlignLeft, Play, RotateCcw, ArrowRight, Eraser, Zap, ListTree, Sparkles, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { ReactFlow, Background, Controls, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import './ParseTreeVisualizer.css';
 
 // --- Dynamic Parser ---
 const tokenize = (input) => {
@@ -152,7 +154,15 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
 
 const ParseTreeVisualizer = () => {
     const [expression, setExpression] = useState("position = initial + rate * 60");
-    const [isSimulating, setIsSimulating] = useState(false);
+    const [activeStage, setActiveStage] = useState('config'); // 'config', 'generation'
+
+    const examples = [
+        "position = initial + rate * 60",
+        "current = old + offset * 2",
+        "x = (a + b) * (c - d)",
+        "id + id * id",
+        "a * b + c"
+    ];
 
     // Graph State
     const [nodes, setNodes] = useState([]);
@@ -171,134 +181,174 @@ const ParseTreeVisualizer = () => {
     };
 
     const handleSimulate = () => {
-        setIsSimulating(true);
         generateGraph();
+        setActiveStage('generation');
     };
 
     const handleReset = () => {
-        setIsSimulating(false);
+        setActiveStage('config');
+        setNodes([]);
+        setEdges([]);
+    };
+
+    const handleClear = () => {
+        setExpression('');
+        setActiveStage('config');
         setNodes([]);
         setEdges([]);
     };
 
     // Pre-load default state
     useEffect(() => {
-        if (!isSimulating && nodes.length === 0) {
+        if (activeStage === 'config' && nodes.length === 0) {
             const { rNodes, rEdges } = buildParseTree("id + id * id");
             const { nodes: lNodes, edges: lEdges } = getLayoutedElements(rNodes, rEdges);
             setNodes(lNodes);
             setEdges(lEdges);
         }
-    }, [isSimulating, nodes.length]);
+    }, [activeStage, nodes.length]);
 
     return (
-        <div className="simulation-workspace">
-            <div className="workspace-header">
-                <h2><AlignLeft size={24} className="inline-block mr-2" />Parse Tree Construction</h2>
+        <div className="parsetree-unit-container">
+            <div className="parsetree-workspace-header">
+                <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                    <Link to="/unit2-3" className="parsetree-back-link" title="Back to Syntax Unit">
+                        <ArrowLeft size={24} />
+                    </Link>
+                    <ListTree size={28} className="parsetree-header-icon" />
+                    Parse Tree Construction
+                </motion.h2>
                 <p>Visualize how the parser derives a string using the grammar rules (Bottom-up or Top-down).</p>
             </div>
 
-            <div className="glass-panel mt-6 flex gap-4 p-4 items-end">
-                <div className="flex-1">
-                    <label className="text-sm text-muted mb-2 block flex justify-between">
-                        <span>Expression</span>
-                    </label>
-                    <input
-                        type="text"
-                        value={expression}
-                        onChange={(e) => setExpression(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white font-mono"
-                        disabled={isSimulating}
-                        placeholder="e.g. current = old + offset * 2"
-                    />
-                </div>
-                {!isSimulating ? (
-                    <button className="btn-primary mb-[2px]" onClick={handleSimulate}>
-                        <Play size={18} /> Build Tree
-                    </button>
-                ) : (
-                    <button className="btn-secondary mb-[2px]" onClick={handleReset}>
-                        <RotateCcw size={18} /> Reset
-                    </button>
-                )}
-            </div>
+            <div className="parsetree-main-grid">
+                {/* Configuration Panel */}
+                <div className="parsetree-rc-panel mb-10">
+                    <div className="parsetree-rc-input-group">
+                        <div className="parsetree-panel-header mb-4">
+                            <h3><Zap size={20} className="parsetree-header-icon" /> Expression</h3>
+                            <div className="flex gap-2 items-center">
+                                {activeStage === 'config' && (
+                                    <button
+                                        className="parsetree-btn-secondary parsetree-btn-sm mr-2"
+                                        onClick={() => setExpression(examples[Math.floor(Math.random() * examples.length)])}
+                                    >
+                                        Example Change
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <input
+                            type="text"
+                            value={expression}
+                            onChange={(e) => setExpression(e.target.value)}
+                            className="parsetree-main-input"
+                            disabled={activeStage !== 'config'}
+                            placeholder="e.g. current = old + offset * 2"
+                        />
+                    </div>
 
-            <div className="glass-panel mt-6 relative" style={{ height: '500px' }}>
-                <style>
-                    {`
-                        .tree-node {
-                            border-radius: 8px;
-                            width: 60px;
-                            height: 60px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            color: white;
-                            font-weight: bold;
-                            font-size: 16px;
-                            font-family: var(--font-mono);
-                            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-                        }
-                        .tree-node.non-terminal {
-                            background: rgba(88, 166, 255, 0.1);
-                            border: 2px solid var(--accent-primary);
-                            color: var(--accent-primary);
-                        }
-                        .tree-node.terminal {
-                            border-radius: 50%;
-                        }
-                        .tree-node.operator {
-                            background: rgba(210, 168, 255, 0.1);
-                            border: 2px dashed #d2a8ff;
-                            color: #d2a8ff;
-                            font-size: 24px;
-                        }
-                        .tree-node.lexeme {
-                            background: rgba(63, 185, 80, 0.1);
-                            border: 2px solid var(--success);
-                            color: var(--success);
-                            font-size: 14px;
-                            box-shadow: 0 0 15px rgba(63, 185, 80, 0.2);
-                            word-break: break-all;
-                            text-align: center;
-                            padding: 2px;
-                        }
-                        .react-flow__edge-path {
-                            stroke: #8b949e;
-                            stroke-width: 2;
-                        }
-                    `}
-                </style>
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    fitView
-                    attributionPosition="bottom-right"
-                    nodesDraggable={true}
-                >
-                    <Background color="#30363d" gap={16} />
-                    <Controls />
-                </ReactFlow>
-            </div>
+                    <div className="parsetree-actions-row mt-6">
+                        {activeStage === 'config' ? (
+                            <button className="parsetree-btn parsetree-btn-primary" onClick={handleSimulate}>
+                                <Play size={18} /> Build Tree
+                            </button>
+                        ) : (
+                            <button className="parsetree-btn parsetree-btn-secondary" onClick={handleReset}>
+                                <RotateCcw size={18} /> Edit Expression
+                            </button>
+                        )}
+                        <button className="parsetree-btn parsetree-btn-secondary" onClick={handleClear}>
+                            <Eraser size={18} /> Clear Input
+                        </button>
+                    </div>
+                </div>
 
-            <div className="flex gap-6 justify-center mt-6 p-4 glass-panel flex-wrap">
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded border-2 border-[var(--accent-primary)] bg-[rgba(88,166,255,0.1)]"></div>
-                    <span className="text-sm">Non-Terminal (Stmt, Expr, Term, Factor)</span>
+                {/* Journey Tracker */}
+                <div className="parsetree-journey-tracker mb-12">
+                    <div className="parsetree-phases-container">
+                        {[
+                            { id: 1, title: 'Expression Input', desc: 'Source tokens', stage: 'config' },
+                            { id: 2, title: 'Parse Tree Generation', desc: 'Derivation visualized', stage: 'generation' }
+                        ].map((phase, idx, arr) => {
+                            const isCompleted = activeStage === 'generation' && phase.stage === 'config';
+                            const isActive = activeStage === phase.stage;
+
+                            return (
+                                <React.Fragment key={phase.id}>
+                                    <div
+                                        className={`parsetree-phase-box ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                                    >
+                                        <div className="parsetree-phase-num">{phase.id}</div>
+                                        <div className="parsetree-phase-info">
+                                            <h4>{phase.title}</h4>
+                                            <p>{phase.desc}</p>
+                                        </div>
+                                    </div>
+                                    {idx < arr.length - 1 && (
+                                        <ArrowRight className={`parsetree-phase-arrow ${isCompleted ? 'active' : ''}`} size={20} />
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full border-2 border-dashed border-[#d2a8ff] bg-[rgba(210,168,255,0.1)]"></div>
-                    <span className="text-sm">Terminal Operator</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full border-2 border-[var(--success)] bg-[rgba(63,185,80,0.1)] shadow-[0_0_10px_rgba(63,185,80,0.4)]"></div>
-                    <span className="text-sm">Terminal Lexeme (Identifier, Number)</span>
-                </div>
-                {isSimulating && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 ml-4 border-l border-gray-700 pl-4 py-1">
-                        <span className="text-sm text-muted">Leftmost Derivation shown. Yields: <strong className="text-white font-mono ml-2">{expression}</strong></span>
-                    </motion.div>
-                )}
+
+                <AnimatePresence>
+                    {activeStage === 'generation' && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="parsetree-journey-stack"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="parsetree-stage-card"
+                            >
+                                <div className="parsetree-stage-header mb-6">
+                                    <div className="parsetree-stage-title">
+                                        <Sparkles size={24} className="text-indigo-400" />
+                                        <h3>Generated Parse Tree</h3>
+                                    </div>
+                                    <div className="parsetree-badge success">Derivation Complete</div>
+                                </div>
+                                <div className="parsetree-flow-canvas">
+                                    <ReactFlow
+                                        nodes={nodes}
+                                        edges={edges}
+                                        fitView
+                                        attributionPosition="bottom-right"
+                                        nodesDraggable={true}
+                                    >
+                                        <Background color="#1e293b" gap={16} />
+                                        <Controls showInteractive={false} />
+                                    </ReactFlow>
+                                </div>
+                                <div className="flex gap-6 justify-center mt-6 p-4 bg-gray-900/50 rounded-2xl flex-wrap">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded border-2 border-[var(--accent-primary)] bg-[rgba(88,166,255,0.1)]"></div>
+                                        <span className="text-sm text-gray-300">Non-Terminal (Stmt, Expr, Term, Factor)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full border-2 border-dashed border-[#d2a8ff] bg-[rgba(210,168,255,0.1)]"></div>
+                                        <span className="text-sm text-gray-300">Terminal Operator</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full border-2 border-[var(--success)] bg-[rgba(63,185,80,0.1)] shadow-[0_0_10px_rgba(63,185,80,0.4)]"></div>
+                                        <span className="text-sm text-gray-300">Terminal Lexeme (Identifier, Number)</span>
+                                    </div>
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 ml-4 border-l border-gray-700 pl-4 py-1">
+                                        <span className="text-sm text-muted">Yields: <strong className="text-white font-mono ml-2">{expression}</strong></span>
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+
+                            <div className="parsetree-bottom-spacer"></div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

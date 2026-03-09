@@ -150,16 +150,16 @@
 .phase-card {
     flex: 1 1 0;
     min-width: 0;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+    background: rgba(17, 24, 39, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
     padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     position: relative;
     overflow: hidden;
-    transition: all 0.3s;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .phase-card::before {
@@ -169,7 +169,8 @@
     left: 0;
     bottom: 0;
     width: 4px;
-    background: var(--success);
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.4s;
 }
 
 .phase-card.completed::before {
@@ -177,64 +178,76 @@
 }
 
 .phase-card.active {
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-glow);
+    background: rgba(79, 70, 229, 0.1);
+    border-color: rgba(79, 70, 229, 0.3);
     transform: translateY(-4px);
+    box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.5);
 }
 
 .phase-card.active::before {
-    background: var(--accent-primary);
-    box-shadow: 0 0 10px var(--accent-glow);
+    background: #4f46e5;
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
 }
 
 .phase-number {
     width: 28px;
     height: 28px;
-    border-radius: 50%;
-    background: rgba(63, 185, 80, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: var(--success);
-    border: 2px solid var(--success);
+    font-weight: 800;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.4s;
+    flex-shrink: 0;
 }
 
 .phase-card.completed .phase-number {
-    background: rgba(63, 185, 80, 0.2);
-    color: var(--success);
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
 }
 
 .phase-card.active .phase-number {
-    background: rgba(88, 166, 255, 0.2);
-    color: var(--accent-primary);
+    background: rgba(79, 70, 229, 0.2);
+    color: #818cf8;
+    border-color: rgba(129, 140, 248, 0.4);
 }
 
 .phase-content h4 {
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 700;
     margin-bottom: 4px;
-    color: var(--text-primary);
+    color: rgba(255, 255, 255, 0.5);
     margin-top: 0;
+    transition: all 0.4s;
+}
+
+.phase-card.active .phase-content h4,
+.phase-card.completed .phase-content h4 {
+    color: #fff;
 }
 
 .phase-content p {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
     line-height: 1.4;
     margin: 0;
 }
 
 .phase-arrow {
-    color: var(--border-color);
+    color: rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
     width: 18px;
     height: 18px;
+    transition: all 0.4s;
 }
 
 .phase-arrow.active {
-    color: var(--success);
+    color: #4f46e5;
 }
 
 .mt-12 {

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { AlignLeft, ArrowRight, ListTree, Calculator } from 'lucide-react';
+import { AlignLeft, ArrowRight, ListTree, Calculator, Network } from 'lucide-react';
 
 import FirstAndFollow from './methods/FirstAndFollow';
 import ParseTreeVisualizer from './methods/ParseTreeVisualizer';
+import Derivation from './methods/Derivation';
 
 const SyntaxOverview = () => {
     const navigate = useNavigate();
@@ -20,6 +21,12 @@ const SyntaxOverview = () => {
             title: 'Parse Tree Construction',
             desc: 'Visualize derivations showing how a start symbol derives the string according to the grammar rules.',
             icon: <ListTree size={24} />
+        },
+        {
+            id: 'derivation',
+            title: 'Leftmost & Rightmost Derivation',
+            desc: 'Step-by-step token replacement of a source string following the Leftmost and Rightmost derivation logic.',
+            icon: <Network size={24} />
         }
     ];
 
@@ -61,6 +68,7 @@ const SyntaxHome = () => {
             <Route path="/" element={<SyntaxOverview />} />
             <Route path="/first-follow" element={<FirstAndFollow />} />
             <Route path="/parse-tree" element={<ParseTreeVisualizer />} />
+            <Route path="/derivation" element={<Derivation />} />
         </Routes>
     );
 };

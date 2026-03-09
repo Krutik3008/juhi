@@ -272,75 +272,95 @@
 
 .syntax-phase-box {
     flex: 1;
+    background: rgba(17, 24, 39, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 16px 20px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 18px 24px;
-    border-radius: 18px;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(17, 24, 39, 0.4);
+    gap: 15px;
     position: relative;
     overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.syntax-phase-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.4s;
+}
+
+.syntax-phase-box.completed::before {
+    background: var(--success);
 }
 
 .syntax-phase-box.active {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.2);
+    background: rgba(79, 70, 229, 0.1);
+    border-color: rgba(79, 70, 229, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.5);
 }
 
-.syntax-phase-box.completed {
-    background: rgba(16, 185, 129, 0.05);
+.syntax-phase-box.active::before {
+    background: #4f46e5;
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
 }
 
 .syntax-phase-num {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    font-size: 1rem;
-    color: #64748b;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     transition: all 0.4s;
     flex-shrink: 0;
 }
 
-.syntax-phase-box.active .syntax-phase-num {
-    background: #6366f1;
-    color: white;
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-}
-
+.syntax-phase-box.active .syntax-phase-num,
 .syntax-phase-box.completed .syntax-phase-num {
-    background: #10b981;
-    color: white;
+    background: rgba(79, 70, 229, 0.2);
+    color: #818cf8;
+    border-color: rgba(129, 140, 248, 0.4);
 }
 
 .syntax-phase-info h4 {
-    margin: 0;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: #f1f5f9;
+    margin: 0 0 2px 0;
+    color: rgba(255, 255, 255, 0.5);
+    transition: all 0.4s;
+}
+
+.syntax-phase-box.active h4,
+.syntax-phase-box.completed h4 {
+    color: #fff;
 }
 
 .syntax-phase-info p {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
     margin: 0;
-    font-size: 0.8rem;
-    color: #64748b;
 }
 
 .syntax-phase-arrow {
-    color: #334155;
-    transition: all 0.4s;
+    color: rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
+    transition: all 0.4s;
 }
 
 .syntax-phase-arrow.active {
-    color: #6366f1;
+    color: #4f46e5;
 }
 
 /* Stacked Stage Cards */
