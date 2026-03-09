@@ -258,7 +258,7 @@ const AmbiguityChecker = () => {
                         <div className="ambiguity-rc-input-group">
                             <div className="ambiguity-panel-header mb-4">
                                 <h3><Zap size={20} className="ambiguity-header-icon" /> Context Free Grammar</h3>
-                                <button className="ambiguity-btn-secondary ambiguity-btn-sm" onClick={loadExample} disabled={activeStage !== 'config'}>
+                                <button className="ambiguity-btn-secondary ambiguity-btn-sm" onClick={loadExample}>
                                     Example Change
                                 </button>
                             </div>
