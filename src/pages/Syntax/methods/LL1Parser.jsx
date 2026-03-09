@@ -272,6 +272,7 @@ const LL1Parser = () => {
         return () => clearTimeout(timer);
     }, [activeStage, visibleStage]);
 
+
     const handleCompute = () => {
         try {
             setError("");
@@ -356,6 +357,7 @@ const LL1Parser = () => {
         setInputText("");
         setResults(null);
         setActiveStage('config');
+        setVisibleStage(0);
     };
 
     return (
