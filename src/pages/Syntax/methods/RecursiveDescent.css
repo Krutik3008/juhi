@@ -1,0 +1,355 @@
+/* RecursiveDescent.css */
+
+.rd-unit-container {
+    padding-top: 40px;
+    padding-bottom: 0;
+    max-width: 1600px;
+    margin-left: 50px;
+    margin-right: 50px;
+    min-height: 100vh;
+    color: #f8fafc;
+}
+
+.rd-workspace-header {
+    margin-bottom: 2rem;
+    text-align: start;
+}
+
+.rd-workspace-header h2 {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.rd-workspace-header p {
+    color: #94a3b8;
+    font-size: 1.05rem;
+    margin-top: 0.5rem;
+    max-width: 750px;
+}
+
+.rd-header-icon {
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5));
+    color: #22d3ee;
+}
+
+.rd-back-link {
+    color: var(--accent-primary);
+    padding: 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rd-back-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(-4px);
+    color: white;
+}
+
+/* Main Content */
+.rd-main-grid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+/* Definition Card */
+.rd-definition-card {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 36px 40px;
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+}
+
+.rd-definition-card:hover {
+    border-color: rgba(34, 211, 238, 0.15);
+}
+
+.rd-section-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #22d3ee;
+    margin-bottom: 1rem;
+}
+
+.rd-section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(34, 211, 238, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #22d3ee;
+    flex-shrink: 0;
+}
+
+.rd-definition-text {
+    color: #cbd5e1;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    padding-left: 54px;
+}
+
+.rd-definition-text .rd-em {
+    color: #67e8f9;
+    font-weight: 600;
+    font-style: italic;
+}
+
+/* Example Grammar */
+.rd-grammar-box {
+    margin-top: 1.5rem;
+    padding: 20px 24px;
+    padding-left: 54px;
+}
+
+.rd-grammar-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.rd-grammar-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rd-grammar-rule {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    color: #e2e8f0;
+    padding: 10px 16px;
+    background: rgba(30, 41, 59, 0.5);
+    border-left: 3px solid #22d3ee;
+    border-radius: 0 10px 10px 0;
+    transition: all 0.3s;
+}
+
+.rd-grammar-rule:hover {
+    background: rgba(34, 211, 238, 0.06);
+    transform: translateX(4px);
+}
+
+.rd-grammar-rule .rd-nt {
+    color: #22d3ee;
+    font-weight: 700;
+}
+
+.rd-grammar-rule .rd-arrow {
+    color: #64748b;
+    margin: 0 8px;
+}
+
+.rd-grammar-rule .rd-terminal {
+    color: #fbbf24;
+}
+
+.rd-grammar-rule .rd-pipe {
+    color: #64748b;
+    margin: 0 6px;
+}
+
+.rd-grammar-rule .rd-epsilon {
+    color: #a78bfa;
+    font-style: italic;
+}
+
+/* Procedures Grid */
+.rd-procedures-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 1100px) {
+    .rd-procedures-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Procedure Card */
+.rd-procedure-card {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 0;
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.rd-procedure-card:hover {
+    border-color: rgba(34, 211, 238, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.5);
+}
+
+.rd-procedure-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    background: rgba(30, 41, 59, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rd-procedure-name {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #22d3ee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rd-procedure-name .rd-keyword {
+    color: #a78bfa;
+    font-weight: 600;
+}
+
+.rd-procedure-name .rd-fname {
+    color: #67e8f9;
+}
+
+.rd-procedure-name .rd-params {
+    color: #94a3b8;
+}
+
+.rd-procedure-badge {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.rd-procedure-badge.main {
+    background: rgba(34, 211, 238, 0.1);
+    color: #22d3ee;
+    border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+.rd-procedure-badge.helper {
+    background: rgba(167, 139, 250, 0.1);
+    color: #a78bfa;
+    border: 1px solid rgba(167, 139, 250, 0.2);
+}
+
+.rd-procedure-badge.error-badge {
+    background: rgba(248, 81, 73, 0.1);
+    color: #f85149;
+    border: 1px solid rgba(248, 81, 73, 0.2);
+}
+
+/* Code Block */
+.rd-code-block {
+    padding: 24px 28px;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: #e2e8f0;
+    overflow-x: auto;
+}
+
+.rd-code-block .rd-line {
+    display: block;
+    white-space: pre;
+}
+
+.rd-code-block .rd-indent-1 {
+    padding-left: 24px;
+}
+
+.rd-code-block .rd-indent-2 {
+    padding-left: 48px;
+}
+
+.rd-code-block .rd-indent-3 {
+    padding-left: 72px;
+}
+
+.rd-code-block .kw {
+    color: #a78bfa;
+    font-weight: 600;
+}
+
+.rd-code-block .fn {
+    color: #67e8f9;
+}
+
+.rd-code-block .str {
+    color: #fbbf24;
+}
+
+.rd-code-block .cmt {
+    color: #4b5563;
+    font-style: italic;
+}
+
+.rd-code-block .op {
+    color: #94a3b8;
+}
+
+.rd-code-block .var {
+    color: #f0abfc;
+}
+
+.rd-code-block .sym {
+    color: #e2e8f0;
+}
+
+.rd-code-block .err {
+    color: #f87171;
+}
+
+.rd-code-block .success {
+    color: #34d399;
+}
+
+/* Bottom Spacer */
+.rd-bottom-spacer {
+    height: 50px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .rd-unit-container {
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .rd-definition-card {
+        padding: 24px;
+    }
+
+    .rd-definition-text,
+    .rd-grammar-box {
+        padding-left: 0;
+    }
+}

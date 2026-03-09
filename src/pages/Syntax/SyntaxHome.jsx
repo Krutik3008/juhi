@@ -1,11 +1,13 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { AlignLeft, ArrowRight, ListTree, Calculator, Network, AlertTriangle } from 'lucide-react';
+import { AlignLeft, ArrowRight, ListTree, Calculator, Network, AlertTriangle, Table2, Code2 } from 'lucide-react';
 
 import FirstAndFollow from './methods/FirstAndFollow';
 import ParseTreeVisualizer from './methods/ParseTreeVisualizer';
 import Derivation from './methods/Derivation';
 import AmbiguityChecker from './methods/AmbiguityChecker';
+import LL1Parser from './methods/LL1Parser';
+import RecursiveDescent from './methods/RecursiveDescent';
 
 const SyntaxOverview = () => {
     const navigate = useNavigate();
@@ -34,6 +36,18 @@ const SyntaxOverview = () => {
             title: 'Ambiguity Checker',
             desc: 'Prove grammar ambiguity by detecting multiple valid parse trees or leftmost derivations for a single string.',
             icon: <AlertTriangle size={24} className="text-pink-400" />
+        },
+        {
+            id: 'll1-parser',
+            title: 'LL(1) Parser',
+            desc: 'Understand the steps to construct an LL(1) predictive table-driven parser from a context-free grammar.',
+            icon: <Table2 size={24} />
+        },
+        {
+            id: 'recursive-descent',
+            title: 'Recursive Descent Parsing',
+            desc: 'Learn how each non-terminal becomes a procedure for top-down parsing with lookahead-based decisions.',
+            icon: <Code2 size={24} />
         }
     ];
 
@@ -77,6 +91,8 @@ const SyntaxHome = () => {
             <Route path="/parse-tree" element={<ParseTreeVisualizer />} />
             <Route path="/derivation" element={<Derivation />} />
             <Route path="/ambiguity" element={<AmbiguityChecker />} />
+            <Route path="/ll1-parser" element={<LL1Parser />} />
+            <Route path="/recursive-descent" element={<RecursiveDescent />} />
         </Routes>
     );
 };
