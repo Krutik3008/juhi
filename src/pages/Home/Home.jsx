@@ -146,6 +146,8 @@ const Home = () => {
     ];
 
     const handleSimulate = () => {
+        if (!sourceCode.trim()) return;
+
         const result = compile(sourceCode);
         setCompileResult(result);
         setIsSimulating(true);
