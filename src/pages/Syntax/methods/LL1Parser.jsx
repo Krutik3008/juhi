@@ -9,13 +9,60 @@ import './LL1Parser.css';
 /**
  * Basic grammar parser
  */
+function tokenizeRHS(rhsString) {
+    if (rhsString.trim() === 'ε') return ['ε'];
+    // If it already has spaces, just split it
+    if (rhsString.includes(' ')) return rhsString.trim().split(/\s+/);
+
+    // Otherwise, break into tokens:
+    // 1. Non-terminals (Uppercase followed by optional ticks/subscripts) e.g., A, S', T_1
+    // 2. Terminals (lowercase, symbols like +, *, (, ), id)
+    const tokens = [];
+    let current = '';
+
+    for (let i = 0; i < rhsString.length; i++) {
+        const char = rhsString[i];
+        if (/\s/.test(char)) continue;
+
+        // Is it the start of a non-terminal?
+        if (/[A-Z]/.test(char)) {
+            if (current) tokens.push(current);
+            current = char;
+            // Catch trailing ticks or underscores for non-terminals
+            while (i + 1 < rhsString.length && /[']/.test(rhsString[i + 1])) {
+                current += rhsString[++i];
+            }
+            tokens.push(current);
+            current = '';
+        }
+        // Is it a letter or number? (part of a terminal like 'id')
+        else if (/[a-z0-9]/.test(char)) {
+            current += char;
+        }
+        // Is it a symbol?
+        else {
+            if (current) {
+                tokens.push(current);
+                current = '';
+            }
+            tokens.push(char);
+        }
+    }
+    if (current) tokens.push(current);
+
+    return tokens.length > 0 ? tokens : ['ε'];
+}
+
+/**
+ * Basic grammar parser
+ */
 function parseGrammar(text) {
     const rules = [];
     const lines = text.split('\n').filter(l => l.trim() !== '');
     lines.forEach(line => {
         const [lhs, rhsPart] = line.split('->').map(s => s.trim());
         if (!lhs || !rhsPart) return;
-        const alternatives = rhsPart.split('|').map(alt => alt.trim().split(/\s+/));
+        const alternatives = rhsPart.split('|').map(alt => tokenizeRHS(alt));
         rules.push({ lhs, alternatives });
     });
     return rules;
@@ -54,37 +101,71 @@ function removeLeftRecursion(rules) {
  * Step 2: Simple Left Factoring (First level highlight)
  */
 function performLeftFactoring(rules) {
-    // For educational purposes, we detect common prefixes
     const newRules = [];
     let changed = false;
 
     rules.forEach(rule => {
-        const prefixes = {};
-        rule.alternatives.forEach(alt => {
-            const first = alt[0];
-            if (!prefixes[first]) prefixes[first] = [];
-            prefixes[first].push(alt);
-        });
-
-        const factored = [];
+        let currentAlts = [...rule.alternatives];
+        const factoredAlts = [];
         let ruleChanged = false;
+        let suffixCounter = 1;
 
-        Object.keys(prefixes).forEach(first => {
-            if (prefixes[first].length > 1 && first !== 'ε') {
+        while (currentAlts.length > 0) {
+            // Find the longest common prefix among remaining alternatives
+            let bestPrefix = [];
+            let bestCount = 0;
+            let bestGroup = [];
+
+            for (let i = 0; i < currentAlts.length; i++) {
+                for (let j = i + 1; j < currentAlts.length; j++) {
+                    const alt1 = currentAlts[i];
+                    const alt2 = currentAlts[j];
+                    let k = 0;
+                    while (k < alt1.length && k < alt2.length && alt1[k] === alt2[k]) k++;
+
+                    if (k > 0) {
+                        const prefix = alt1.slice(0, k);
+                        // Count how many alternatives share this prefix
+                        const group = currentAlts.filter(a => {
+                            if (a.length < prefix.length) return false;
+                            for (let p = 0; p < prefix.length; p++) if (a[p] !== prefix[p]) return false;
+                            return true;
+                        });
+
+                        if (group.length > bestCount || (group.length === bestCount && prefix.length > bestPrefix.length)) {
+                            bestPrefix = prefix;
+                            bestCount = group.length;
+                            bestGroup = group;
+                        }
+                    }
+                }
+            }
+
+            if (bestCount > 1 && bestPrefix[0] !== 'ε') {
                 changed = true;
                 ruleChanged = true;
-                const newLhs = `${rule.lhs}_alt`;
-                factored.push([first, newLhs]);
+                const newLhs = `${rule.lhs}${suffixCounter === 1 ? "'" : "''"}`;
+                suffixCounter++;
 
-                const suffixes = prefixes[first].map(alt => alt.length > 1 ? alt.slice(1) : ['ε']);
+                factoredAlts.push([...bestPrefix, newLhs]);
+
+                const suffixes = bestGroup.map(alt => {
+                    const suffix = alt.slice(bestPrefix.length);
+                    return suffix.length > 0 ? suffix : ['ε'];
+                });
+
                 newRules.push({ lhs: newLhs, alternatives: suffixes });
+
+                // Remove the factored group from currentAlts
+                currentAlts = currentAlts.filter(a => !bestGroup.includes(a));
             } else {
-                prefixes[first].forEach(alt => factored.push(alt));
+                // If no common prefix found, move the first alt to factored and continue
+                factoredAlts.push(currentAlts.shift());
             }
-        });
+        }
 
         if (ruleChanged) {
-            newRules.push({ lhs: rule.lhs, alternatives: factored });
+            newRules.push({ lhs: rule.lhs, alternatives: factoredAlts });
         } else {
             newRules.push(rule);
         }
@@ -100,75 +181,112 @@ function computeFirstFollow(rules, startSymbol) {
     const first = {};
     const follow = {};
     const nonTerminals = rules.map(r => r.lhs);
-    const rulesMap = {};
-    rules.forEach(r => rulesMap[r.lhs] = r.alternatives);
 
-    nonTerminals.forEach(nt => { first[nt] = new Set(); follow[nt] = new Set(); });
+    // Initialize empty sets
+    nonTerminals.forEach(nt => {
+        first[nt] = new Set();
+        follow[nt] = new Set();
+    });
 
+    // Helper to check if a symbol is a terminal
+    const isTerminal = (sym) => !nonTerminals.includes(sym) && sym !== 'ε';
+
+    // 1. Compute FIRST Sets
     let changed = true;
     while (changed) {
         changed = false;
         rules.forEach(rule => {
+            const A = rule.lhs;
             rule.alternatives.forEach(alt => {
-                const beforeSize = first[rule.lhs].size;
+                const beforeSize = first[A].size;
 
-                let allEpsilon = true;
+                let derivesEpsilon = true;
                 for (const symbol of alt) {
-                    if (!nonTerminals.includes(symbol)) {
-                        first[rule.lhs].add(symbol);
-                        allEpsilon = false;
+                    if (symbol === 'ε') {
+                        // explicitly epsilon production A -> ε
+                        first[A].add('ε');
+                        break;
+                    } else if (isTerminal(symbol)) {
+                        // Add terminal and stop
+                        first[A].add(symbol);
+                        derivesEpsilon = false;
                         break;
                     } else {
+                        // It's a non-terminal
                         const symbolFirst = first[symbol];
-                        symbolFirst.forEach(s => { if (s !== 'ε') first[rule.lhs].add(s); });
-                        if (!symbolFirst.has('ε')) {
-                            allEpsilon = false;
+                        let hasEpsilon = false;
+                        symbolFirst.forEach(s => {
+                            if (s === 'ε') {
+                                hasEpsilon = true;
+                            } else {
+                                first[A].add(s);
+                            }
+                        });
+
+                        // If this non-terminal doesn't derive to epsilon, break
+                        if (!hasEpsilon) {
+                            derivesEpsilon = false;
                             break;
                         }
                     }
                 }
-                if (allEpsilon) first[rule.lhs].add('ε');
 
-                if (first[rule.lhs].size !== beforeSize) changed = true;
+                // If all symbols in the alternative derive to epsilon, then A derives to epsilon
+                if (derivesEpsilon && alt[0] !== 'ε') {
+                    first[A].add('ε');
+                }
+
+                if (first[A].size !== beforeSize) changed = true;
             });
         });
     }
 
+    // 2. Compute FOLLOW Sets
     if (startSymbol && follow[startSymbol]) {
         follow[startSymbol].add('$');
     } else if (rules.length > 0) {
         follow[rules[0].lhs].add('$');
     }
+
     changed = true;
     while (changed) {
         changed = false;
         rules.forEach(rule => {
+            const A = rule.lhs;
             rule.alternatives.forEach(alt => {
                 for (let i = 0; i < alt.length; i++) {
                     const B = alt[i];
                     if (nonTerminals.includes(B)) {
                         const beforeSize = follow[B].size;
 
-                        // Rule: A -> α B β => First(β) in Follow(B)
-                        let allEpsilon = true;
+                        let derivesEpsilon = true;
+                        // Check everything after B in the production A -> α B β
                         for (let j = i + 1; j < alt.length; j++) {
-                            const symbol = alt[j];
-                            if (!nonTerminals.includes(symbol)) {
-                                follow[B].add(symbol);
-                                allEpsilon = false;
+                            const betaSym = alt[j];
+                            if (isTerminal(betaSym)) {
+                                follow[B].add(betaSym);
+                                derivesEpsilon = false;
                                 break;
-                            } else {
-                                first[symbol].forEach(s => { if (s !== 'ε') follow[B].add(s); });
-                                if (!first[symbol].has('ε')) {
-                                    allEpsilon = false;
+                            } else if (betaSym !== 'ε') { // Non-terminal
+                                const betaFirst = first[betaSym];
+                                let hasEpsilon = false;
+                                betaFirst.forEach(s => {
+                                    if (s === 'ε') {
+                                        hasEpsilon = true;
+                                    } else {
+                                        follow[B].add(s);
+                                    }
+                                });
+                                if (!hasEpsilon) {
+                                    derivesEpsilon = false;
                                     break;
                                 }
                             }
                         }
 
-                        // Rule: A -> α B or A -> α B β (where β -> ε) => Follow(A) in Follow(B)
-                        if (allEpsilon) {
-                            follow[rule.lhs].forEach(s => follow[B].add(s));
+                        // If everything after B derives to epsilon (or B is at the end), add FOLLOW(A) to FOLLOW(B)
+                        if (derivesEpsilon) {
+                            follow[A].forEach(s => follow[B].add(s));
                         }
 
                         if (follow[B].size !== beforeSize) changed = true;
@@ -337,6 +455,14 @@ const LL1Parser = () => {
                     trace.push({ stack: stackStr, input: inputStr, action: `Match ${current}`, match: true });
                 } else if (table[top] && table[top][current]) {
                     const rule = table[top][current];
+
+                    // NEW: Explicitly detect LL(1) conflicts
+                    if (rule.includes('|')) {
+                        trace.push({ stack: stackStr, input: inputStr, action: `Error: Conflict in table (Not LL(1)). Cannot decide between: ${rule}`, error: true });
+                        success = false;
+                        break;
+                    }
+
                     const rhs = rule.split('->')[1].trim().split(/\s+/);
                     stack.pop();
                     if (rhs[0] !== 'ε') {
