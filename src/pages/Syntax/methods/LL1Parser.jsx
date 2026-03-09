@@ -260,6 +260,17 @@ const LL1Parser = () => {
     const [results, setResults] = useState(null);
     const [error, setError] = useState("");
     const [exampleIdx, setExampleIdx] = useState(0);
+    const [visibleStage, setVisibleStage] = useState(0);
+
+    useEffect(() => {
+        let timer;
+        if (activeStage === 'steps' && visibleStage < 5) {
+            timer = setTimeout(() => {
+                setVisibleStage(prev => prev + 1);
+            }, visibleStage === 0 ? 300 : 2000);
+        }
+        return () => clearTimeout(timer);
+    }, [activeStage, visibleStage]);
 
     const handleCompute = () => {
         try {
@@ -325,6 +336,7 @@ const LL1Parser = () => {
                 success
             });
             setActiveStage('steps');
+            setVisibleStage(0);
         } catch (err) {
             setError(err.message);
         }
@@ -408,7 +420,7 @@ const LL1Parser = () => {
                             </button>
                         )}
                         <button className="ll1-btn ll1-btn-secondary" onClick={handleClear}>
-                            <Eraser size={18} /> Clear
+                            <Eraser size={18} /> Clear Input
                         </button>
                     </div>
                 </div>
@@ -423,18 +435,20 @@ const LL1Parser = () => {
                             { id: 4, title: 'Parsing Table', desc: 'Construct table', stage: 'steps' },
                             { id: 5, title: 'String Trace', desc: 'Parse input', stage: 'steps' }
                         ].map((phase, idx, arr) => {
-                            const isActive = activeStage === 'steps';
-                            const isCompleted = activeStage === 'steps';
+                            const isActive = visibleStage === phase.id;
+                            const isCompleted = visibleStage > phase.id;
                             return (
                                 <React.Fragment key={phase.id}>
-                                    <div className={`ll1-phase-box ${isActive ? 'active' : ''}`}>
+                                    <div
+                                        className={`ll1-phase-box ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                                    >
                                         <div className="ll1-phase-num">{phase.id}</div>
                                         <div className="ll1-phase-info">
                                             <h4>{phase.title}</h4>
                                             <p>{phase.desc}</p>
                                         </div>
                                     </div>
-                                    {idx < arr.length - 1 && <span className="ll1-phase-arrow active">→</span>}
+                                    {idx < arr.length - 1 && <span className={`ll1-phase-arrow ${isCompleted ? 'active' : ''}`}>→</span>}
                                 </React.Fragment>
                             );
                         })}
@@ -472,32 +486,34 @@ const LL1Parser = () => {
                                 };
                                 return (
                                     <>
-                                        {/* Steps Grid */}
-                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                            {/* Step 1 & 2 */}
-                                            <div className="flex flex-col gap-8">
-                                                <motion.div className="ll1-stage-card" variants={cardVariants}>
-                                                    <div className="ll1-stage-header">
-                                                        <div className="ll1-stage-title"><Binary size={20} className="text-indigo-400" /><h3>1. Remove Left Recursion</h3></div>
-                                                        <div className="ll1-badge success">Processed</div>
-                                                    </div>
-                                                    <div className="ll1-grammar-display">
-                                                        {results.noRecursion.map((r, i) => (
-                                                            <div key={i} className="ll1-grammar-rule">
-                                                                <span className="nt">{r.lhs}</span>
-                                                                <span className="arrow">→</span>
-                                                                {r.alternatives.map((alt, ai) => (
-                                                                    <span key={ai}>
-                                                                        <span className={alt[0] === 'ε' ? 'epsilon' : 'terminal'}>{alt.join(' ')}</span>
-                                                                        {ai < r.alternatives.length - 1 && <span className="arrow"> | </span>}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </motion.div>
+                                        {/* Step 1: Remove Left Recursion */}
+                                        {visibleStage >= 1 && (
+                                            <motion.div className="ll1-stage-card" variants={cardVariants} initial="hidden" animate="visible">
+                                                <div className="ll1-stage-header">
+                                                    <div className="ll1-stage-title"><Binary size={20} className="text-indigo-400" /><h3>1. Remove Left Recursion</h3></div>
+                                                    <div className="ll1-badge success">Processed</div>
+                                                </div>
+                                                <div className="ll1-grammar-display">
+                                                    {results.noRecursion.map((r, i) => (
+                                                        <div key={i} className="ll1-grammar-rule">
+                                                            <span className="nt">{r.lhs}</span>
+                                                            <span className="arrow">→</span>
+                                                            {r.alternatives.map((alt, ai) => (
+                                                                <span key={ai}>
+                                                                    <span className={alt[0] === 'ε' ? 'epsilon' : 'terminal'}>{alt.join(' ')}</span>
+                                                                    {ai < r.alternatives.length - 1 && <span className="arrow"> | </span>}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
 
-                                                <motion.div className="ll1-stage-card" variants={cardVariants}>
+                                        {/* Step 2: Perform Left Factoring */}
+                                        <AnimatePresence>
+                                            {visibleStage >= 2 && (
+                                                <motion.div className="ll1-stage-card" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
                                                     <div className="ll1-stage-header">
                                                         <div className="ll1-stage-title"><Settings2 size={20} className="text-indigo-400" /><h3>2. Perform Left Factoring</h3></div>
                                                         <div className="ll1-badge success">Processed</div>
@@ -517,109 +533,143 @@ const LL1Parser = () => {
                                                         ))}
                                                     </div>
                                                 </motion.div>
-                                            </div>
+                                            )}
+                                        </AnimatePresence>
 
-                                            {/* Step 3: First & Follow */}
-                                            <motion.div className="ll1-stage-card" variants={cardVariants}>
-                                                <div className="ll1-stage-header">
-                                                    <div className="ll1-stage-title"><Sparkles size={20} className="text-indigo-400" /><h3>3. FIRST & FOLLOW Sets</h3></div>
-                                                    <div className="ll1-badge success">Computed</div>
-                                                </div>
-                                                <div className="ll1-table-wrapper">
-                                                    <table className="ll1-table">
-                                                        <thead>
-                                                            <tr><th>Non-Terminal</th><th>FIRST()</th><th>FOLLOW()</th></tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {Object.keys(results.first).map(nt => (
-                                                                <tr key={nt}>
-                                                                    <td className="nt-cell">{nt}</td>
-                                                                    <td className="set-cell">{`{ ${Array.from(results.first[nt]).join(', ')} }`}</td>
-                                                                    <td className="follow-cell">{`{ ${Array.from(results.follow[nt]).join(', ')} }`}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </motion.div>
-                                        </div>
+                                        {/* Step 3: First & Follow */}
+                                        <AnimatePresence>
+                                            {visibleStage >= 3 && (
+                                                <motion.div className="ll1-stage-card" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                                                    <div className="ll1-stage-header">
+                                                        <div className="ll1-stage-title"><Sparkles size={20} className="text-indigo-400" /><h3>3. FIRST & FOLLOW Sets</h3></div>
+                                                        <div className="ll1-badge success">Computed</div>
+                                                    </div>
+                                                    <div className="ll1-table-wrapper">
+                                                        <table className="ll1-table">
+                                                            <thead>
+                                                                <tr><th>Non-Terminal</th><th>FIRST()</th><th>FOLLOW()</th></tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {Object.keys(results.first).map(nt => (
+                                                                    <tr key={nt}>
+                                                                        <td className="nt-cell">{nt}</td>
+                                                                        <td className="set-cell">{`{ ${Array.from(results.first[nt]).join(', ')} }`}</td>
+                                                                        <td className="follow-cell">{`{ ${Array.from(results.follow[nt]).join(', ')} }`}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
 
                                         {/* Step 4: Predictive Parsing Table */}
-                                        <motion.div className="ll1-stage-card" variants={cardVariants}>
-                                            <div className="ll1-stage-header">
-                                                <div className="ll1-stage-title"><Table2 size={20} className="text-indigo-400" /><h3>4. Predictive Parsing Table</h3></div>
-                                                <div className="ll1-badge success">Complete</div>
-                                            </div>
-                                            <div className="ll1-table-wrapper">
-                                                <table className="ll1-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Non-Terminal</th>
-                                                            {results.terminals.map(t => <th key={t}>{t}</th>)}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {Object.keys(results.table).map(nt => (
-                                                            <tr key={nt}>
-                                                                <td className="nt-cell">{nt}</td>
-                                                                {results.terminals.map(t => (
-                                                                    <td key={t} className={results.table[nt][t] ? "prod-cell" : "empty-cell"}>
-                                                                        {results.table[nt][t] || "-"}
-                                                                    </td>
+                                        <AnimatePresence>
+                                            {visibleStage >= 4 && (
+                                                <motion.div className="ll1-stage-card" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                                                    <div className="ll1-stage-header">
+                                                        <div className="ll1-stage-title"><Table2 size={20} className="text-indigo-400" /><h3>4. Predictive Parsing Table</h3></div>
+                                                        <div className="ll1-badge success">Complete</div>
+                                                    </div>
+                                                    <div className="ll1-table-wrapper">
+                                                        <table className="ll1-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Non-Terminal</th>
+                                                                    {results.terminals.map(t => <th key={t}>{t}</th>)}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {Object.keys(results.table).map(nt => (
+                                                                    <tr key={nt}>
+                                                                        <td className="nt-cell">{nt}</td>
+                                                                        {results.terminals.map(t => (
+                                                                            <td key={t} className={results.table[nt][t] ? "prod-cell" : "empty-cell"}>
+                                                                                {results.table[nt][t] || "-"}
+                                                                            </td>
+                                                                        ))}
+                                                                    </tr>
                                                                 ))}
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </motion.div>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
 
                                         {/* Step 5: Parsing Trace */}
-                                        <motion.div className="ll1-trace-card" variants={cardVariants}>
-                                            <div className="ll1-stage-header">
-                                                <div className="ll1-stage-title"><ListChecks size={20} className="text-indigo-400" /><h3>5. Trace of Parsing String: "{inputText}"</h3></div>
-                                                <div className={results.success ? "ll1-badge success" : "ll1-badge error-badge"}>
-                                                    {results.success ? "Accepted" : "Error"}
-                                                </div>
-                                            </div>
-                                            <div className="ll1-trace-wrapper">
-                                                <table className="ll1-trace-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Step</th>
-                                                            <th>Stack Content</th>
-                                                            <th>Input Buffer</th>
-                                                            <th>Action</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {results.trace.map((t, i) => (
-                                                            <motion.tr
-                                                                key={i}
-                                                                className={t.action === "Accepted" ? "accept-row" : t.match ? "match-row" : ""}
-                                                                initial={{ opacity: 0, x: -10 }}
-                                                                animate={{ opacity: 1, x: 0 }}
-                                                                transition={{ delay: i * 0.05, duration: 0.2 }}
-                                                            >
-                                                                <td>{i + 1}</td>
-                                                                <td>{t.stack}</td>
-                                                                <td>{t.input}</td>
-                                                                <td className={t.error ? "text-red-400" : ""}>{t.action}</td>
-                                                            </motion.tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </motion.div>
+                                        <AnimatePresence>
+                                            {visibleStage >= 5 && (
+                                                <>
+                                                    <motion.div className="ll1-trace-card" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                                                        <div className="ll1-stage-header">
+                                                            <div className="ll1-stage-title"><ListChecks size={20} className="text-indigo-400" /><h3>5. Trace of Parsing String: "{inputText}"</h3></div>
+                                                            <div className={results.success ? "ll1-badge success" : "ll1-badge error-badge"}>
+                                                                {results.success ? "Accepted" : "Error"}
+                                                            </div>
+                                                        </div>
+                                                        <div className="ll1-trace-wrapper">
+                                                            <table className="ll1-trace-table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Step</th>
+                                                                        <th>Stack Content</th>
+                                                                        <th>Input Buffer</th>
+                                                                        <th>Action</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {results.trace.map((t, i) => (
+                                                                        <motion.tr
+                                                                            key={i}
+                                                                            className={t.action === "Accepted" ? "accept-row" : t.match ? "match-row" : ""}
+                                                                            initial={{ opacity: 0, x: -10 }}
+                                                                            animate={{ opacity: 1, x: 0 }}
+                                                                            transition={{ delay: i * 0.08, duration: 0.3 }}
+                                                                        >
+                                                                            <td>{i + 1}</td>
+                                                                            <td>{t.stack}</td>
+                                                                            <td>{t.input}</td>
+                                                                            <td className={t.error ? "text-red-400" : ""}>{t.action}</td>
+                                                                        </motion.tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </motion.div>
 
-                                        <motion.div className="ll1-info-note" variants={cardVariants} style={{ borderLeftColor: '#6366f1' }}>
-                                            <h4><Sparkles size={18} className="text-indigo-400" /> Parser Verdict</h4>
-                                            <ul>
-                                                <li>String status: <strong>{results.success ? "Successfully Parsed" : "Parsing Failed"}</strong></li>
-                                                <li>The grammar is <strong>LL(1) compatible</strong> if there are no multiple entries in the table.</li>
-                                                <li>Blank entries in the table lead to syntax errors during parsing.</li>
-                                            </ul>
-                                        </motion.div>
+                                                    <motion.div
+                                                        className="ll1-stage-card"
+                                                        initial={{ opacity: 0, y: 20 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0.5 }}
+                                                        style={{
+                                                            background: 'rgba(99, 102, 241, 0.05)',
+                                                            borderColor: 'rgba(99, 102, 241, 0.2)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            padding: '24px',
+                                                            textAlign: 'center',
+                                                            marginBottom: '50px'
+                                                        }}
+                                                    >
+                                                        <div>
+                                                            <h3 style={{ fontSize: '1.2rem', color: '#fff', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                                                <span style={{ color: '#4f46e5' }}>✨</span> Parser Verdict
+                                                            </h3>
+                                                            <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.95rem', margin: '0 0 6px 0' }}>
+                                                                String status: <strong style={{ color: results.success ? '#4ade80' : '#f87171' }}>{results.success ? "Successfully Parsed ✓" : "Parsing Failed ✗"}</strong>
+                                                            </p>
+                                                            <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.85rem', margin: 0 }}>
+                                                                The grammar is <strong style={{ color: '#e2e8f0' }}>LL(1) compatible</strong> if there are no multiple entries in the parsing table. Blank entries lead to syntax errors.
+                                                            </p>
+                                                        </div>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
                                     </>
                                 );
                             })()}

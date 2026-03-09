@@ -214,7 +214,7 @@ textarea.ll1-main-input {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 16px;
     width: 100%;
     overflow-x: auto;
     padding-bottom: 20px;
@@ -226,7 +226,7 @@ textarea.ll1-main-input {
 }
 
 .ll1-phase-box {
-    flex: 0 0 280px;
+    flex: 0 1 280px;
     background: rgba(17, 24, 39, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 16px;
@@ -237,6 +237,14 @@ textarea.ll1-main-input {
     position: relative;
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    margin-top: 11px;
+}
+
+.ll1-phase-box:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
 }
 
 .ll1-phase-box::before {
@@ -255,15 +263,19 @@ textarea.ll1-main-input {
 }
 
 .ll1-phase-box.active {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(79, 70, 229, 0.1);
+    border-color: rgba(79, 70, 229, 0.3);
     transform: translateY(-4px);
     box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.5);
 }
 
 .ll1-phase-box.active::before {
-    background: #6366f1;
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+    background: #4f46e5;
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
+}
+
+.ll1-phase-box.active .ll1-phase-info h4 {
+    color: #818cf8;
 }
 
 .ll1-phase-num {
@@ -320,8 +332,9 @@ textarea.ll1-main-input {
 .ll1-journey-stack {
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 50px;
     margin-top: 2rem;
+    margin-bottom: -50px;
 }
 
 .ll1-stage-card {
