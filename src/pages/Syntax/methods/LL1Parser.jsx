@@ -96,7 +96,7 @@ function performLeftFactoring(rules) {
 /**
  * Step 3: Compute FIRST and FOLLOW
  */
-function computeFirstFollow(rules) {
+function computeFirstFollow(rules, startSymbol) {
     const first = {};
     const follow = {};
     const nonTerminals = rules.map(r => r.lhs);
@@ -134,7 +134,11 @@ function computeFirstFollow(rules) {
         });
     }
 
-    follow[rules[0].lhs].add('$');
+    if (startSymbol && follow[startSymbol]) {
+        follow[startSymbol].add('$');
+    } else if (rules.length > 0) {
+        follow[rules[0].lhs].add('$');
+    }
     changed = true;
     while (changed) {
         changed = false;
@@ -184,6 +188,7 @@ function constructTable(rules, first, follow) {
     const table = {};
     const nonTerminals = rules.map(r => r.lhs);
     const terminals = new Set();
+    let isLL1 = true;
 
     rules.forEach(r => {
         r.alternatives.forEach(alt => {
@@ -196,7 +201,7 @@ function constructTable(rules, first, follow) {
 
     nonTerminals.forEach(nt => {
         table[nt] = {};
-        terminals.forEach(t => table[nt][t] = null);
+        terminals.forEach(t => table[nt][t] = []);
     });
 
     rules.forEach(rule => {
@@ -219,18 +224,35 @@ function constructTable(rules, first, follow) {
             }
 
             firstAlt.forEach(t => {
-                table[rule.lhs][t] = `${rule.lhs} -> ${alt.join(' ')}`;
+                const prod = `${rule.lhs} -> ${alt.join(' ')}`;
+                if (!table[rule.lhs][t].includes(prod)) {
+                    table[rule.lhs][t].push(prod);
+                    if (table[rule.lhs][t].length > 1) isLL1 = false;
+                }
             });
 
             if (allEpsilon) {
                 follow[rule.lhs].forEach(t => {
-                    table[rule.lhs][t] = `${rule.lhs} -> ${alt.join(' ')}`;
+                    const prod = `${rule.lhs} -> ${alt.join(' ')}`;
+                    if (!table[rule.lhs][t].includes(prod)) {
+                        table[rule.lhs][t].push(prod);
+                        if (table[rule.lhs][t].length > 1) isLL1 = false;
+                    }
                 });
             }
         });
     });
 
-    return { table, terminals: Array.from(terminals) };
+    // Convert arrays to strings for display
+    const finalTable = {};
+    nonTerminals.forEach(nt => {
+        finalTable[nt] = {};
+        terminals.forEach(t => {
+            finalTable[nt][t] = table[nt][t].length > 0 ? table[nt][t].join(' | ') : null;
+        });
+    });
+
+    return { table: finalTable, terminals: Array.from(terminals), isLL1 };
 }
 
 // --- Component ---
@@ -267,10 +289,11 @@ const LL1Parser = () => {
         if (activeStage === 'steps' && visibleStage < 5) {
             timer = setTimeout(() => {
                 setVisibleStage(prev => prev + 1);
-            }, visibleStage === 0 ? 300 : 2000);
+            }, visibleStage === 0 ? 300 : 1500);
         }
         return () => clearTimeout(timer);
     }, [activeStage, visibleStage]);
+
 
 
     const handleCompute = () => {
@@ -278,16 +301,17 @@ const LL1Parser = () => {
             setError("");
             const initialRules = parseGrammar(grammarText);
             if (initialRules.length === 0) throw new Error("Invalid grammar format");
+            const startSymbol = initialRules[0].lhs;
 
             const step1 = removeLeftRecursion(initialRules);
             const step2 = performLeftFactoring(step1.rules);
             const finalRules = step2.rules;
-            const { first, follow } = computeFirstFollow(finalRules);
-            const { table, terminals } = constructTable(finalRules, first, follow);
+            const { first, follow } = computeFirstFollow(finalRules, startSymbol);
+            const { table, terminals, isLL1 } = constructTable(finalRules, first, follow);
 
             // Step 5: Parsing process
             const trace = [];
-            const stack = ['$', finalRules[0].lhs];
+            const stack = ['$', startSymbol];
             const input = inputText.trim().split(/\s+/).filter(x => x !== '');
             input.push('$');
             let pointer = 0;
@@ -320,7 +344,11 @@ const LL1Parser = () => {
                     }
                     trace.push({ stack: stackStr, input: inputStr, action: `Expand ${rule}` });
                 } else {
-                    trace.push({ stack: stackStr, input: inputStr, action: "Error: No entry in table", error: true });
+                    const expected = table[top] ? Object.keys(table[top]).filter(t => table[top][t]) : [];
+                    const actionMsg = expected.length > 0
+                        ? `Error: Unexpected '${current}', expected ${expected.join(' or ')}`
+                        : "Error: No entry in table";
+                    trace.push({ stack: stackStr, input: inputStr, action: actionMsg, error: true });
                     break;
                 }
             }
@@ -334,7 +362,9 @@ const LL1Parser = () => {
                 table,
                 terminals,
                 trace,
-                success
+                success,
+                startSymbol,
+                isLL1
             });
             setActiveStage('steps');
             setVisibleStage(0);
@@ -659,13 +689,23 @@ const LL1Parser = () => {
                                                     >
                                                         <div>
                                                             <h3 style={{ fontSize: '1.2rem', color: '#fff', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                                                <span style={{ color: '#4f46e5' }}>✨</span> Parser Verdict
+                                                                <span style={{ color: '#4f46e5' }}>✨</span> Main Parser Verdict
                                                             </h3>
-                                                            <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.95rem', margin: '0 0 6px 0' }}>
-                                                                String status: <strong style={{ color: results.success ? '#4ade80' : '#f87171' }}>{results.success ? "Successfully Parsed ✓" : "Parsing Failed ✗"}</strong>
-                                                            </p>
-                                                            <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.85rem', margin: 0 }}>
-                                                                The grammar is <strong style={{ color: '#e2e8f0' }}>LL(1) compatible</strong> if there are no multiple entries in the parsing table. Blank entries lead to syntax errors.
+                                                            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '12px', marginBottom: '16px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                                                <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.95rem', margin: '0 0 6px 0' }}>
+                                                                    Grammar Start Symbol: <strong style={{ color: '#818cf8' }}>{results.startSymbol}</strong>
+                                                                </p>
+                                                                <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.95rem', margin: '0 0 6px 0' }}>
+                                                                    LL(1) Compatibility: <strong style={{ color: results.isLL1 ? '#4ade80' : '#f87171' }}>{results.isLL1 ? "LL(1) Valid" : "Conflicts Detected"}</strong>
+                                                                </p>
+                                                                <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.95rem', margin: '0' }}>
+                                                                    Parsing String Result: <strong style={{ color: results.success ? '#4ade80' : '#f87171' }}>{results.success ? "Successfully Parsed ✓" : "Parsing Failed ✗"}</strong>
+                                                                </p>
+                                                            </div>
+                                                            <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.85rem', margin: 0, maxWidth: '600px' }}>
+                                                                {results.isLL1
+                                                                    ? "The grammar is LL(1) compatible because each table cell has at most one production."
+                                                                    : "The grammar is NOT LL(1) because one or more cells have multiple productions (conflicts). This leads to non-deterministic choices."}
                                                             </p>
                                                         </div>
                                                     </motion.div>
