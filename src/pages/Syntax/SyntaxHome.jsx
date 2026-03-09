@@ -1,10 +1,11 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { AlignLeft, ArrowRight, ListTree, Calculator, Network } from 'lucide-react';
+import { AlignLeft, ArrowRight, ListTree, Calculator, Network, AlertTriangle } from 'lucide-react';
 
 import FirstAndFollow from './methods/FirstAndFollow';
 import ParseTreeVisualizer from './methods/ParseTreeVisualizer';
 import Derivation from './methods/Derivation';
+import AmbiguityChecker from './methods/AmbiguityChecker';
 
 const SyntaxOverview = () => {
     const navigate = useNavigate();
@@ -27,6 +28,12 @@ const SyntaxOverview = () => {
             title: 'Leftmost & Rightmost Derivation',
             desc: 'Step-by-step token replacement of a source string following the Leftmost and Rightmost derivation logic.',
             icon: <Network size={24} />
+        },
+        {
+            id: 'ambiguity',
+            title: 'Ambiguity Checker',
+            desc: 'Prove grammar ambiguity by detecting multiple valid parse trees or leftmost derivations for a single string.',
+            icon: <AlertTriangle size={24} className="text-pink-400" />
         }
     ];
 
@@ -69,6 +76,7 @@ const SyntaxHome = () => {
             <Route path="/first-follow" element={<FirstAndFollow />} />
             <Route path="/parse-tree" element={<ParseTreeVisualizer />} />
             <Route path="/derivation" element={<Derivation />} />
+            <Route path="/ambiguity" element={<AmbiguityChecker />} />
         </Routes>
     );
 };
