@@ -450,24 +450,26 @@ const ThompsonConstruction = () => {
                 </div>
             )}
 
-            <div className="glass-panel nfa-legend-panel">
-                <div className="nfa-legend-item">
-                    <div className="legend-circle start-circle"></div>
-                    <span className="legend-text">Start State</span>
+            {nodes.length > 0 && (
+                <div className="glass-panel nfa-legend-panel">
+                    <div className="nfa-legend-item">
+                        <div className="legend-circle start-circle"></div>
+                        <span className="legend-text">Start State</span>
+                    </div>
+                    <div className="nfa-legend-item">
+                        <div className="legend-circle accept-circle"></div>
+                        <span className="legend-text">Accepting State</span>
+                    </div>
+                    <div className="nfa-legend-item">
+                        <div className="legend-line epsilon-line"></div>
+                        <span className="legend-text">ε (Epsilon) Transition</span>
+                    </div>
+                    <div className="nfa-legend-item">
+                        <div className="legend-line input-line"></div>
+                        <span className="legend-text">Input Transition</span>
+                    </div>
                 </div>
-                <div className="nfa-legend-item">
-                    <div className="legend-circle accept-circle"></div>
-                    <span className="legend-text">Accepting State</span>
-                </div>
-                <div className="nfa-legend-item">
-                    <div className="legend-line epsilon-line"></div>
-                    <span className="legend-text">ε (Epsilon) Transition</span>
-                </div>
-                <div className="nfa-legend-item">
-                    <div className="legend-line input-line"></div>
-                    <span className="legend-text">Input Transition</span>
-                </div>
-            </div>
+            )}
 
             {
                 isSimulating && stats && (
