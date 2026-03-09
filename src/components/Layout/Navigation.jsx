@@ -10,9 +10,6 @@ const Navigation = () => {
     { path: '/', label: 'Home - Full Pipeline', icon: <Cpu size={20} /> },
     { path: '/unit1', label: 'Unit I: Lexical Analysis', icon: <Type size={20} /> },
     { path: '/unit2-3', label: 'Unit II & III: Syntax', icon: <AlignLeft size={20} /> },
-    { path: '/unit4', label: 'Unit IV: Semantic', icon: <Search size={20} /> },
-    { path: '/unit5', label: 'Unit V: Run-Time', icon: <Settings size={20} /> },
-    { path: '/unit6', label: 'Unit VI: Opt. & Code Gen', icon: <Code size={20} /> },
   ];
 
   return (
