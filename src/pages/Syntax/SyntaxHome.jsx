@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { AlignLeft, ArrowRight, ListTree, Calculator, Network, AlertTriangle, Table2, Code2 } from 'lucide-react';
+import { AlignLeft, ArrowRight, ListTree, Calculator, Network, AlertTriangle, Table2, Code2, ListChecks } from 'lucide-react';
 
 import FirstAndFollow from './methods/FirstAndFollow';
 import ParseTreeVisualizer from './methods/ParseTreeVisualizer';
@@ -8,6 +8,7 @@ import Derivation from './methods/Derivation';
 import AmbiguityChecker from './methods/AmbiguityChecker';
 import LL1Parser from './methods/LL1Parser';
 import RecursiveDescent from './methods/RecursiveDescent';
+import ShiftReduceParser from './methods/ShiftReduceParser';
 
 const SyntaxOverview = () => {
     const navigate = useNavigate();
@@ -48,6 +49,12 @@ const SyntaxOverview = () => {
             title: 'Recursive Descent Parsing',
             desc: 'Learn how each non-terminal becomes a procedure for top-down parsing with lookahead-based decisions.',
             icon: <Code2 size={24} />
+        },
+        {
+            id: 'shift-reduce-parser',
+            title: 'Shift-Reduce Parser',
+            desc: 'A bottom-up parsing technique that uses a stack to hold symbols and an input buffer for tokens.',
+            icon: <ListChecks size={24} />
         }
     ];
 
@@ -93,6 +100,7 @@ const SyntaxHome = () => {
             <Route path="/ambiguity" element={<AmbiguityChecker />} />
             <Route path="/ll1-parser" element={<LL1Parser />} />
             <Route path="/recursive-descent" element={<RecursiveDescent />} />
+            <Route path="/shift-reduce-parser" element={<ShiftReduceParser />} />
         </Routes>
     );
 };
